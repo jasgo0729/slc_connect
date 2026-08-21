@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cross-SLC Connect — 데이터베이스 ERD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #FAFAF7;
+    --ink: #1B1B19;
+    --muted: #6E6E67;
+    --rule: #DFDED6;
+    --panel: #FFFFFF;
+    --d-people: #35618E;
+    --d-connect: #1A6E55;
+    --d-score: #9A5223;
+    --d-extra: #6A5C99;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: "IBM Plex Sans KR", system-ui, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    border-bottom: 1px solid var(--rule);
+    padding: 14px 20px 12px;
+    background: var(--panel);
+    flex-shrink: 0;
+  }
+  .title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .sub { font-size: 12px; color: var(--muted); font-family: "IBM Plex Mono", monospace; }
+
+  .controls {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .group { display: flex; gap: 6px; align-items: center; }
+  .group-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    margin-right: 2px;
+  }
+  button {
+    font-family: inherit;
+    font-size: 12px;
+    padding: 5px 11px;
+    border: 1px solid var(--rule);
+    background: var(--panel);
+    color: var(--ink);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: border-color .12s, background .12s;
+  }
+  button:hover { border-color: #B9B8AE; }
+  button:focus-visible { outline: 2px solid var(--d-people); outline-offset: 1px; }
+  button.on {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+  button.icon { font-family: "IBM Plex Mono", monospace; min-width: 30px; padding: 5px 0; }
+
+  .legend { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .lg { display: flex; gap: 5px; align-items: center; font-size: 11px; color: var(--muted); }
+  .sw { width: 10px; height: 10px; border-radius: 2px; border: 1.5px solid; }
+
+  #stage {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    cursor: grab;
+    background:
+      radial-gradient(circle at 1px 1px, #E4E3DA 1px, transparent 0) 0 0 / 22px 22px;
+  }
+  #stage.dragging { cursor: grabbing; }
+  #canvas {
+    position: absolute;
+    top: 0; left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+  #canvas svg { max-width: none !important; display: block; }
+
+  #hint {
+    position: absolute;
+    left: 16px;
+    bottom: 14px;
+    font-size: 11px;
+    color: var(--muted);
+    background: rgba(250,250,247,.88);
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: 6px 10px;
+    font-family: "IBM Plex Mono", monospace;
+    pointer-events: none;
+  }
+  #zoomval {
+    position: absolute;
+    right: 16px;
+    bottom: 14px;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: "IBM Plex Mono", monospace;
+    background: rgba(250,250,247,.88);
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: 6px 10px;
+    pointer-events: none;
+  }
+  #loading {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  svg.erDiagram .divider path { stroke-opacity: .45; }
+  svg.erDiagram .row-rect-odd path,
+  svg.erDiagram .row-rect-even path { stroke: none !important; }
+  svg.erDiagram text { font-family: "IBM Plex Sans KR", sans-serif !important; }
+  svg.erDiagram .er.entityLabel { font-weight: 600 !important; }
+  svg.erDiagram .er.attributeBoxN text,
+  svg.erDiagram .er.attributeBoxOdd text,
+  svg.erDiagram .er.attributeBoxEven text { font-family: "IBM Plex Mono", monospace !important; }
+
+  @media (max-width: 720px) {
+    .controls { gap: 12px; }
+    .legend { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-row">
+    <h1>Cross-SLC Connect · 데이터베이스 ERD</h1>
+    <span class="sub">23 tables</span>
+  </div>
+  <div class="controls">
+    <div class="group">
+      <span class="group-label">범위</span>
+      <button data-view="all" class="on">전체</button>
+      <button data-view="people">사람·인증</button>
+      <button data-view="connect">커넥트·지원</button>
+      <button data-view="score">인증·점수</button>
+      <button data-view="extra">부가 기능</button>
+    </div>
+    <div class="group">
+      <span class="group-label">보기</span>
+      <button class="icon" id="zin" aria-label="확대">+</button>
+      <button class="icon" id="zout" aria-label="축소">−</button>
+      <button id="zfit">맞춤</button>
+    </div>
+    <div class="legend">
+      <span class="lg"><span class="sw" style="border-color:var(--d-people);background:#EAF0F6"></span>사람·인증</span>
+      <span class="lg"><span class="sw" style="border-color:var(--d-connect);background:#E6F1EC"></span>커넥트·지원</span>
+      <span class="lg"><span class="sw" style="border-color:var(--d-score);background:#F6EDE5"></span>인증·점수</span>
+      <span class="lg"><span class="sw" style="border-color:var(--d-extra);background:#EFECF6"></span>부가</span>
+    </div>
+  </div>
+</header>
+
+<div id="stage">
+  <div id="canvas"></div>
+  <div id="loading">다이어그램 그리는 중…</div>
+  <div id="hint">드래그 이동 · 휠 확대축소 · 더블클릭 맞춤</div>
+  <div id="zoomval">100%</div>
+</div>
+
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+
+const DOMAIN = {
+  people:  ['ROSTER','USERS','SESSIONS','BINDING_ATTEMPTS','ADMIN_AUDIT_LOG','SEASON_CONFIG'],
+  connect: ['CONNECTS','APPLICATIONS','MEMBERSHIPS','FAVORITES','TAGS','USER_TAGS','CONNECT_TAGS'],
+  score:   ['CERTIFICATIONS','CERTIFICATION_PARTICIPANTS','SCORE_EVENTS','SCORE_MULTIPLIER_WINDOWS'],
+  extra:   ['PUSH_SUBSCRIPTIONS','NOTIFICATIONS','MBTI_RESULTS','GAME_SCORES','RECOMMENDATION_LOGS','PHOTO_CONTEST_ENTRIES'],
+};
+const TINT = {
+  people:  { stroke: '#35618E', fill: '#EAF0F6' },
+  connect: { stroke: '#1A6E55', fill: '#E6F1EC' },
+  score:   { stroke: '#9A5223', fill: '#F6EDE5' },
+  extra:   { stroke: '#6A5C99', fill: '#EFECF6' },
+};
+const domainOf = name => Object.keys(DOMAIN).find(k => DOMAIN[k].includes(name));
+
+const ENTITY = {
+ROSTER: `ROSTER {
+    text student_no PK
+    text name
+    text cohort
+    text campus
+    text slc
+  }`,
+USERS: `USERS {
+    uuid id PK
+    text google_sub UK
+    text google_email
+    text student_no UK
+    text role
+    text major
+    text mbti_type
+    timestamptz bound_at
+    timestamptz email_bounced_at
+  }`,
+SESSIONS: `SESSIONS {
+    uuid id PK
+    uuid user_id FK
+    timestamptz expires_at
+  }`,
+BINDING_ATTEMPTS: `BINDING_ATTEMPTS {
+    uuid id PK
+    text google_sub
+    text attempted_no
+    boolean succeeded
+  }`,
+ADMIN_AUDIT_LOG: `ADMIN_AUDIT_LOG {
+    uuid id PK
+    uuid actor_id FK
+    text action
+    jsonb detail
+  }`,
+SEASON_CONFIG: `SEASON_CONFIG {
+    text key PK
+    text value
+    text description
+  }`,
+CONNECTS: `CONNECTS {
+    uuid id PK
+    text name
+    text track
+    text description
+    smallint capacity
+    text status
+    text invite_token UK
+    boolean is_public
+    uuid created_by FK
+    timestamptz confirmed_at
+    timestamptz closed_at
+  }`,
+APPLICATIONS: `APPLICATIONS {
+    uuid id PK
+    uuid connect_id FK
+    uuid user_id FK
+    text status
+    text reject_reason
+    timestamptz decided_at
+  }`,
+MEMBERSHIPS: `MEMBERSHIPS {
+    uuid id PK
+    uuid connect_id FK
+    uuid user_id FK
+    text role
+    timestamptz joined_at
+    timestamptz left_at
+  }`,
+FAVORITES: `FAVORITES {
+    uuid user_id PK
+    uuid connect_id PK
+    timestamptz created_at
+  }`,
+TAGS: `TAGS {
+    serial id PK
+    text name UK
+    boolean is_suggested
+  }`,
+USER_TAGS: `USER_TAGS {
+    uuid user_id PK
+    int tag_id PK
+  }`,
+CONNECT_TAGS: `CONNECT_TAGS {
+    uuid connect_id PK
+    int tag_id PK
+  }`,
+CERTIFICATIONS: `CERTIFICATIONS {
+    uuid id PK
+    uuid connect_id FK
+    uuid submitted_by FK
+    date activity_date
+    text activity_type
+    text photo_key
+    uuid cross_connect_id FK
+    smallint own_participant_count
+    smallint cross_participant_count
+    text review_status
+  }`,
+CERTIFICATION_PARTICIPANTS: `CERTIFICATION_PARTICIPANTS {
+    uuid certification_id PK
+    uuid user_id PK
+  }`,
+SCORE_EVENTS: `SCORE_EVENTS {
+    uuid id PK
+    uuid connect_id FK
+    uuid certification_id FK
+    text event_type
+    int base_points
+    numeric multiplier
+    int final_points
+    date week_start
+    text reason
+  }`,
+SCORE_MULTIPLIER_WINDOWS: `SCORE_MULTIPLIER_WINDOWS {
+    serial id PK
+    text name
+    numeric multiplier
+    timestamptz starts_at
+    timestamptz ends_at
+  }`,
+PUSH_SUBSCRIPTIONS: `PUSH_SUBSCRIPTIONS {
+    uuid id PK
+    uuid user_id FK
+    text endpoint UK
+  }`,
+NOTIFICATIONS: `NOTIFICATIONS {
+    uuid id PK
+    uuid user_id FK
+    text type
+    text channel
+    text delivery_status
+    timestamptz sent_at
+  }`,
+MBTI_RESULTS: `MBTI_RESULTS {
+    uuid id PK
+    uuid user_id FK
+    text type_code
+    jsonb axis_scores
+  }`,
+GAME_SCORES: `GAME_SCORES {
+    uuid id PK
+    uuid user_id FK
+    text game_key
+    int score
+    boolean is_valid
+  }`,
+RECOMMENDATION_LOGS: `RECOMMENDATION_LOGS {
+    uuid id PK
+    uuid user_id FK
+    text query
+    text mode
+    boolean is_fallback
+  }`,
+PHOTO_CONTEST_ENTRIES: `PHOTO_CONTEST_ENTRIES {
+    uuid id PK
+    uuid connect_id UK
+    text photo_key
+    timestamptz submitted_at
+  }`,
+};
+
+const RELATIONS = [
+  ['ROSTER','||--o|','USERS','학번 대조'],
+  ['USERS','||--o{','SESSIONS','로그인 유지'],
+  ['USERS','||--o{','ADMIN_AUDIT_LOG','관리자 조작'],
+  ['USERS','||--o{','CONNECTS','개설'],
+  ['CONNECTS','||--o{','APPLICATIONS','지원 이력'],
+  ['USERS','||--o{','APPLICATIONS','지원'],
+  ['CONNECTS','||--o{','MEMBERSHIPS','현재 소속'],
+  ['USERS','||--o{','MEMBERSHIPS','참여'],
+  ['CONNECTS','||--o{','FAVORITES','찜'],
+  ['USERS','||--o{','FAVORITES','찜'],
+  ['CONNECTS','||--o{','CONNECT_TAGS','주제'],
+  ['TAGS','||--o{','CONNECT_TAGS','분류'],
+  ['USERS','||--o{','USER_TAGS','관심'],
+  ['TAGS','||--o{','USER_TAGS','관심'],
+  ['CONNECTS','||--o{','CERTIFICATIONS','인증 제출'],
+  ['CONNECTS','||--o{','CERTIFICATIONS','크로스 상대'],
+  ['USERS','||--o{','CERTIFICATIONS','제출자'],
+  ['CERTIFICATIONS','||--o{','CERTIFICATION_PARTICIPANTS','참여자 기록'],
+  ['USERS','||--o{','CERTIFICATION_PARTICIPANTS','참여'],
+  ['CERTIFICATIONS','||--o{','SCORE_EVENTS','배점 근거'],
+  ['CONNECTS','||--o{','SCORE_EVENTS','점수 귀속'],
+  ['USERS','||--o{','PUSH_SUBSCRIPTIONS','구독'],
+  ['USERS','||--o{','NOTIFICATIONS','수신'],
+  ['USERS','||--o{','MBTI_RESULTS','응시'],
+  ['USERS','||--o{','GAME_SCORES','기록'],
+  ['USERS','||--o{','RECOMMENDATION_LOGS','호출'],
+  ['CONNECTS','||--o|','PHOTO_CONTEST_ENTRIES','사진전 제보'],
+];
+
+function buildSource(view) {
+  let names;
+  if (view === 'all') names = Object.keys(ENTITY);
+  else {
+    names = [...DOMAIN[view]];
+    // 앵커 테이블은 문맥 유지를 위해 함께 보여준다
+    if (view !== 'people' && !names.includes('USERS')) names.push('USERS');
+    if (view === 'score' && !names.includes('CONNECTS')) names.push('CONNECTS');
+    if (view === 'extra' && !names.includes('CONNECTS')) names.push('CONNECTS');
+  }
+  const set = new Set(names);
+  const rels = RELATIONS
+    .filter(([a, , b]) => set.has(a) && set.has(b))
+    .map(([a, c, b, l]) => `  ${a} ${c} ${b} : "${l}"`);
+  const ents = names.map(n => '  ' + ENTITY[n]);
+  return 'erDiagram\n' + rels.join('\n') + '\n' + ents.join('\n');
+}
+
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '"IBM Plex Sans KR", sans-serif',
+  er: { diagramPadding: 24, entityPadding: 12, minEntityWidth: 130 },
+  themeVariables: {
+    fontSize: '13px',
+    fontFamily: '"IBM Plex Sans KR", sans-serif',
+    lineColor: '#8A8981',
+    textColor: '#1B1B19',
+  },
+});
+
+const stage = document.getElementById('stage');
+const canvas = document.getElementById('canvas');
+const loading = document.getElementById('loading');
+const zoomval = document.getElementById('zoomval');
+
+let k = 1, tx = 0, ty = 0;
+const MIN = 0.15, MAX = 4;
+
+function apply() {
+  canvas.style.transform = `translate(${tx}px, ${ty}px) scale(${k})`;
+  zoomval.textContent = Math.round(k * 100) + '%';
+}
+
+function fit() {
+  const svg = canvas.querySelector('svg');
+  if (!svg) return;
+  const vb = svg.viewBox.baseVal;
+  const w = vb && vb.width ? vb.width : svg.getBoundingClientRect().width;
+  const h = vb && vb.height ? vb.height : svg.getBoundingClientRect().height;
+  const cw = stage.clientWidth - 48, ch = stage.clientHeight - 48;
+  k = Math.min(cw / w, ch / h, 1.6);
+  k = Math.max(k, MIN);
+  tx = (stage.clientWidth - w * k) / 2;
+  ty = (stage.clientHeight - h * k) / 2;
+  apply();
+}
+
+function zoomAt(cx, cy, factor) {
+  const nk = Math.min(MAX, Math.max(MIN, k * factor));
+  const r = nk / k;
+  tx = cx - (cx - tx) * r;
+  ty = cy - (cy - ty) * r;
+  k = nk;
+  apply();
+}
+
+stage.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = stage.getBoundingClientRect();
+  zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.12 : 1 / 1.12);
+}, { passive: false });
+
+let dragging = false, sx = 0, sy = 0;
+stage.addEventListener('pointerdown', e => {
+  dragging = true; sx = e.clientX - tx; sy = e.clientY - ty;
+  stage.classList.add('dragging');
+  stage.setPointerCapture(e.pointerId);
+});
+stage.addEventListener('pointermove', e => {
+  if (!dragging) return;
+  tx = e.clientX - sx; ty = e.clientY - sy; apply();
+});
+stage.addEventListener('pointerup', e => {
+  dragging = false;
+  stage.classList.remove('dragging');
+  try { stage.releasePointerCapture(e.pointerId); } catch (_) {}
+});
+stage.addEventListener('dblclick', fit);
+
+document.getElementById('zin').onclick  = () => zoomAt(stage.clientWidth / 2, stage.clientHeight / 2, 1.25);
+document.getElementById('zout').onclick = () => zoomAt(stage.clientWidth / 2, stage.clientHeight / 2, 1 / 1.25);
+document.getElementById('zfit').onclick = fit;
+window.addEventListener('resize', fit);
+
+function postProcess(root) {
+  root.querySelectorAll('svg.erDiagram .node').forEach(node => {
+    const label = node.querySelector('text');
+    const name = label ? label.textContent.trim() : '';
+    const dom = domainOf(name);
+    const firstPath = node.querySelector('path[d]');
+    if (firstPath) {
+      const nums = (firstPath.getAttribute('d').match(/-?[\d.]+/g) || []).map(Number);
+      if (nums.length >= 8) {
+        const xs = [nums[0], nums[2], nums[4], nums[6]];
+        const ys = [nums[1], nums[3], nums[5], nums[7]];
+        const x = Math.min(...xs), y = Math.min(...ys);
+        const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', x); rect.setAttribute('y', y);
+        rect.setAttribute('width', w); rect.setAttribute('height', h);
+        rect.setAttribute('rx', '8');
+        for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+          if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+        }
+        if (dom) {
+          rect.setAttribute('stroke', TINT[dom].stroke);
+          rect.setAttribute('stroke-width', '1.4');
+          rect.setAttribute('fill', TINT[dom].fill);
+        }
+        firstPath.replaceWith(rect);
+      }
+    }
+    root.querySelectorAll('.row-rect-odd path, .row-rect-even path')
+        .forEach(p => p.setAttribute('stroke', 'none'));
+  });
+}
+
+let seq = 0;
+async function render(view) {
+  loading.style.display = 'grid';
+  try {
+    const { svg } = await mermaid.render('erd-' + (++seq), buildSource(view));
+    canvas.innerHTML = svg;
+    const el = canvas.querySelector('svg');
+    el.removeAttribute('width');
+    el.removeAttribute('height');
+    el.style.maxWidth = 'none';
+    const vb = el.viewBox.baseVal;
+    if (vb && vb.width) { el.style.width = vb.width + 'px'; el.style.height = vb.height + 'px'; }
+    postProcess(canvas);
+    fit();
+  } catch (err) {
+    canvas.innerHTML = '<p style="padding:24px;font-size:13px">렌더링 실패: ' + err.message + '</p>';
+  }
+  loading.style.display = 'none';
+}
+
+document.querySelectorAll('[data-view]').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('[data-view]').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    render(btn.dataset.view);
+  };
+});
+
+await document.fonts.ready;
+render('all');
+</script>
+</body>
+</html>
