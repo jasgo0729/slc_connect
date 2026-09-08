@@ -1,22 +1,33 @@
+# =========================================================
+# 로컬 개발 — Postgres만 컨테이너로 띄운다.
+#
+# 앱은 `npm run dev` 로 직접 돌린다. 컨테이너에 넣으면 코드를
+# 고칠 때마다 다시 빌드해야 해서 개발 속도가 떨어진다.
+#
+#   docker compose -f docker-compose.dev.yml up -d
+# =========================================================
+
 services:
   db:
     image: postgres:16-alpine
     container_name: connect-db
+    restart: unless-stopped
+    # 로컬에서는 포트를 연다. DB 클라이언트로 들여다볼 일이 많다.
     ports:
-      - "5432:5432"
+      - '5432:5432'
     environment:
       POSTGRES_USER: connect
       POSTGRES_PASSWORD: devpassword
       POSTGRES_DB: connect
-      # 한글 정렬·비교를 위해 초기화 옵션을 지정한다.
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8'
+      TZ: Asia/Seoul
     volumes:
       - pgdata_dev:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U connect -d connect"]
+      test: ['CMD-SHELL', 'pg_isready -U connect -d connect']
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 20
 
 volumes:
   pgdata_dev:

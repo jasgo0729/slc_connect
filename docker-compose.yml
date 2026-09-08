@@ -1,0 +1,81 @@
+# =========================================================
+# 운영 — EC2 한 대에 전부 올린다.
+#
+# 사용자 200~300명 규모라 쪼갤 이유가 없다. 대신 두 가지는
+# 반드시 지킨다 — 포트를 여는 것은 Caddy뿐이고, 사진과 백업은
+# 컨테이너 밖에 남긴다.
+# =========================================================
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      DOMAIN: ${DOMAIN:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # 발급받은 인증서가 여기 저장된다. 이 볼륨이 없으면 컨테이너를
+      # 다시 띄울 때마다 인증서를 새로 받으러 가고, Let's Encrypt의
+      # 주당 발급 한도(도메인당 5회)에 걸려 일주일간 HTTPS가 막힌다.
+      - caddy_data:/data
+      - caddy_config:/config
+      - caddy_logs:/var/log/caddy
+    depends_on:
+      app:
+        condition: service_healthy
+
+  app:
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      TZ: Asia/Seoul
+    # 포트를 밖으로 열지 않는다. Caddy를 통해서만 닿는다.
+    expose:
+      - '3000'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # 앱을 띄우기 전에 한 번 돌고 끝난다.
+  # 코드는 새 컬럼을 찾는데 DB에 없는 상태로 뜨는 것을 막는다.
+  migrate:
+    build:
+      context: .
+      target: migrator
+    restart: 'no'
+    env_file: .env.production
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-connect}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD를 .env 에 넣어주세요}
+      POSTGRES_DB: ${POSTGRES_DB:-connect}
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8'
+      TZ: Asia/Seoul
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # 백업 스크립트가 여기로 덤프를 떨어뜨린다.
+      - ./backups:/backups
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-connect} -d ${POSTGRES_DB:-connect}']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+  caddy_logs:
