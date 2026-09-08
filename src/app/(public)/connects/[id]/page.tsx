@@ -9,7 +9,8 @@ import { DetailActions } from '@/components/detail-actions';
 import { IconArrowLeft, IconPin } from '@/components/ui/icon';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getConnectDetail, summarizeResidence } from '@/lib/db/queries/connect-detail';
-import { CONDITIONS, DAYS, GOAL_TYPES } from '@/lib/connects/options';
+import { countFavorites, getFavoriteIds } from '@/lib/db/queries/favorites';
+import { CONDITIONS, DAYS, GOAL_TYPES, trackLabel } from '@/lib/connects/options';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +25,6 @@ export const dynamic = 'force-dynamic';
  */
 interface Props {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ created?: string }>;
 }
 
 const CAMPUS_LABEL: Record<string, string> = {
@@ -33,15 +33,18 @@ const CAMPUS_LABEL: Record<string, string> = {
   공통: '공통',
 };
 
-export default async function ConnectDetailPage({ params, searchParams }: Props) {
+export default async function ConnectDetailPage({ params }: Props) {
   const { id } = await params;
-  const { created } = await searchParams;
 
   const user = await getCurrentUser();
   if (!user) redirect(`/login?callbackUrl=${encodeURIComponent(`/connects/${id}`)}`);
 
   const c = await getConnectDetail(id, user.id);
   if (!c) notFound();
+
+  const favIds = await getFavoriteIds(user.id);
+  // U-06 정확한 찜 수는 팀장에게만 보여준다.
+  const favoriteCount = c.viewer.isLeader ? await countFavorites(c.id) : undefined;
 
   // C-11 비공개 커넥트는 목록에 없다. 링크를 아는 사람은 볼 수 있어야
   // 초대가 성립하므로, 여기서는 막지 않는다.
@@ -55,29 +58,20 @@ export default async function ConnectDetailPage({ params, searchParams }: Props)
 
   return (
     <>
-      <AppBar current="/connects" user={{ name: user.name }} />
+      <AppBar current="/connects" user={{ id: user.id, name: user.name }} />
 
       <main className="shell detail detail-page">
         <Link href="/connects" className="detail-meta" style={{ marginTop: 0 }}>
           <IconArrowLeft size={18} /> 커넥트 상세
         </Link>
 
-        {created && (
-          <p className="notice notice--info" style={{ marginTop: 14 }}>
-            <span>
-              {c.status === 'pending_review'
-                ? '개설 요청이 접수됐어요. 운영진 확인이 끝나면 씨앗판에 올라갑니다.'
-                : '커넥트가 만들어졌어요. 초대 링크를 복사해 함께할 사람에게 보내보세요.'}
-            </span>
-          </p>
-        )}
 
         <div className="detail-layout" style={{ marginTop: 16 }}>
           <div>
             <h1 className="detail-title">{c.name}</h1>
             <div className="chip-row">
               <Badge>{CAMPUS_LABEL[c.campus] ?? c.campus}</Badge>
-              <Badge tone="track">{c.track === 'qualitative' ? '정성' : '정량'}</Badge>
+              <Badge tone="track">{trackLabel(c.track)}</Badge>
               <StatusBadge status={c.status} />
               {!c.isPublic && <Badge tone="closed">비공개</Badge>}
             </div>
@@ -161,6 +155,9 @@ export default async function ConnectDetailPage({ params, searchParams }: Props)
             status={c.status}
             track={c.track}
             viewer={c.viewer}
+            favorited={favIds.has(c.id)}
+            loggedIn
+            favoriteCount={favoriteCount}
           />
         </div>
       </main>

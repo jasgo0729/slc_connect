@@ -21,7 +21,7 @@ export default async function NewConnectPage() {
 
   return (
     <>
-      <AppBar current="/connects" user={{ name: user.name }} />
+      <AppBar current="/connects" user={{ id: user.id, name: user.name }} />
       <main className="page shell create">
         <Link href="/connects" className="detail-meta" style={{ marginTop: 0 }}>
           <IconArrowLeft size={18} /> 커넥트 개설

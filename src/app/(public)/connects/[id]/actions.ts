@@ -1,0 +1,124 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { getCurrentUser } from '@/lib/auth/session';
+import {
+  APPLY_MESSAGES,
+  applyToConnect,
+  approveApplication,
+  cancelApplication,
+  rejectApplication,
+  setEarlyClosed,
+} from '@/lib/db/queries/applications';
+import { toggleFavorite } from '@/lib/db/queries/favorites';
+import { isRejectReason } from '@/lib/connects/reject-reasons';
+
+/**
+ * 상세·관리 화면의 행동들.
+ *
+ * 화면에서 버튼을 감추더라도 여기서 다시 확인한다. 서버 액션은
+ * 폼을 거치지 않고 직접 호출할 수 있으므로 화면 쪽은 편의일 뿐이다.
+ * 팀장 권한과 정원 확인은 전부 쿼리 계층의 트랜잭션 안에 있다.
+ */
+
+export async function favoriteAction(connectId: string): Promise<boolean> {
+  const user = await getCurrentUser();
+  if (!user) redirect(`/login?callbackUrl=${encodeURIComponent(`/connects/${connectId}`)}`);
+
+  const on = await toggleFavorite(user.id, connectId);
+  revalidatePath(`/connects/${connectId}`);
+  revalidatePath('/connects');
+  return on;
+}
+
+export async function applyAction(
+  connectId: string,
+  message?: string,
+): Promise<{ error?: string }> {
+  const user = await getCurrentUser();
+  if (!user) redirect(`/login?callbackUrl=${encodeURIComponent(`/connects/${connectId}`)}`);
+
+  const result = await applyToConnect(user.id, connectId, message?.slice(0, 200));
+  if (!result.ok) return { error: APPLY_MESSAGES[result.reason] };
+
+  revalidatePath(`/connects/${connectId}`);
+  revalidatePath('/me');
+  return {};
+}
+
+export async function cancelAction(
+  connectId: string,
+  applicationId: string,
+): Promise<{ error?: string }> {
+  const user = await getCurrentUser();
+  if (!user) redirect('/login');
+
+  const r = await cancelApplication(user.id, applicationId);
+  if (!r.ok) return { error: '취소할 수 없는 신청이에요.' };
+
+  revalidatePath(`/connects/${connectId}`);
+  revalidatePath('/me');
+  return {};
+}
+
+export async function approveAction(
+  connectId: string,
+  applicationId: string,
+): Promise<{ error?: string }> {
+  const user = await getCurrentUser();
+  if (!user) redirect('/login');
+
+  const r = await approveApplication(user.id, applicationId);
+  if (!r.ok) {
+    return {
+      error:
+        r.reason === 'FULL'
+          ? '자리가 모두 찼어요. 정원을 늘리려면 운영진에게 문의해 주세요.'
+          : r.reason === 'NOT_LEADER'
+            ? '팀장만 승인할 수 있어요.'
+            : '이미 처리된 신청이에요.',
+    };
+  }
+
+  revalidatePath(`/connects/${connectId}/manage`);
+  revalidatePath(`/connects/${connectId}`);
+  return {};
+}
+
+export async function rejectAction(
+  connectId: string,
+  applicationId: string,
+  reason: string,
+): Promise<{ error?: string }> {
+  const user = await getCurrentUser();
+  if (!user) redirect('/login');
+
+  // 정형 문구 밖의 값이 들어오면 그대로 저장하지 않는다.
+  const safe = isRejectReason(reason) ? reason : 'etc';
+  const r = await rejectApplication(user.id, applicationId, safe);
+  if (!r.ok) {
+    return { error: r.reason === 'NOT_LEADER' ? '팀장만 거절할 수 있어요.' : '이미 처리된 신청이에요.' };
+  }
+
+  revalidatePath(`/connects/${connectId}/manage`);
+  return {};
+}
+
+export async function earlyCloseAction(
+  connectId: string,
+  closed: boolean,
+): Promise<{ error?: string }> {
+  const user = await getCurrentUser();
+  if (!user) redirect('/login');
+
+  const r = await setEarlyClosed(user.id, connectId, closed);
+  if (!r.ok) {
+    return { error: r.reason === 'NOT_LEADER' ? '팀장만 바꿀 수 있어요.' : '지금은 바꿀 수 없어요.' };
+  }
+
+  revalidatePath(`/connects/${connectId}/manage`);
+  revalidatePath(`/connects/${connectId}`);
+  revalidatePath('/connects');
+  return {};
+}

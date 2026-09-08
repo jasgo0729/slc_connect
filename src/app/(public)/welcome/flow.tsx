@@ -4,14 +4,17 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Modal } from '@/components/ui/modal';
 import { ProfileSheet } from '@/components/profile-sheet';
+import { updateProfile } from '../me/actions';
 
 type Step = 'welcome' | 'profile' | 'done';
 
-export function WelcomeFlow() {
+export function WelcomeFlow({ next }: { next: string }) {
   const router = useRouter();
   const [step, setStep] = useState<Step>('welcome');
 
-  const finish = () => router.replace('/connects');
+    // 스킵하든 저장하든 원래 가려던 곳으로. 초대 링크로 들어왔다면
+  // 그 커넥트 상세가 된다(C-14).
+  const finish = () => router.replace(next);
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--s25)' }}>
@@ -26,7 +29,8 @@ export function WelcomeFlow() {
       <ProfileSheet
         open={step === 'profile'}
         onClose={finish}
-        onSave={() => setStep('done')}
+        onSubmit={updateProfile}
+        onDone={() => setStep('done')}
       />
 
       <Modal

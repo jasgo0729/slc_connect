@@ -8,7 +8,7 @@ const STATUS: Record<string, { text: string; tone: string }> = {
   recruiting: { text: '모집 중', tone: 'open' },
   full_closed: { text: '마감', tone: 'closed' },
   early_closed: { text: '승인받고 참여', tone: 'review' },
-  pending_review: { text: '정성 확인 대기', tone: 'review' },
+  pending_review: { text: '도전 확인 대기', tone: 'review' },
   confirmed: { text: '활동 중', tone: 'closed' },
   private: { text: '비공개', tone: 'closed' },
 };

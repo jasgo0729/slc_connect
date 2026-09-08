@@ -15,7 +15,7 @@ const TABS = [
   { href: '/notifications', label: '알림', icon: IconBell },
 ];
 
-export function TabBar({ current }: { current?: string }) {
+export function TabBar({ current, unread = 0 }: { current?: string; unread?: number }) {
   return (
     <nav className="tabbar" aria-label="하단 메뉴">
       {TABS.map(({ href, label, icon: Icon, fab }) =>
@@ -28,7 +28,12 @@ export function TabBar({ current }: { current?: string }) {
           </Link>
         ) : (
           <Link key={href} href={href} aria-current={current === href ? 'page' : undefined}>
-            <Icon size={21} />
+            <span className="tab-icon">
+              <Icon size={21} />
+              {href === '/notifications' && unread > 0 && (
+                <span className="tab-dot" aria-hidden="true" />
+              )}
+            </span>
             <span>{label}</span>
           </Link>
         ),

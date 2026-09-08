@@ -15,22 +15,26 @@ import {
 } from '@/components/filter-sheet';
 import type { Filters } from '@/components/filter-sheet';
 import { IconArrowRight, IconFilter } from '@/components/ui/icon';
+import { matchesCampus } from '@/lib/connects/campus-filter';
 
 const TRACKS = [
   { value: '', label: '전체' },
-  { value: 'quantitative', label: '정량' },
-  { value: 'qualitative', label: '정성' },
+  { value: 'quantitative', label: '취미' },
+  { value: 'qualitative', label: '도전' },
 ];
 
 export function Board({
   items,
   loggedIn,
   featured,
+  favoriteIds,
 }: {
   items: ConnectCardData[];
   loggedIn: boolean;
   featured?: ConnectCardData;
+  favoriteIds: string[];
 }) {
+  const favs = new Set(favoriteIds);
   const [track, setTrack] = useState('');
   const [filters, setFilters] = useState<Filters>({});
   const [draft, setDraft] = useState<Filters>({});
@@ -41,9 +45,12 @@ export function Board({
   // 서버를 다시 부르지 않으므로 조건을 바꿀 때 화면이 깜빡이지 않는다.
   const shown = items
     .filter((c) => {
+      // 상단에 이미 크게 띄운 커넥트를 바로 아래 목록에 또 두지 않는다.
+      if (featured && c.id === featured.id) return false;
       if (track && c.track !== track) return false;
       if (filters.status && c.status !== filters.status) return false;
-      if (filters.campus && c.campus !== filters.campus) return false;
+      // '공통' 커넥트는 양 캠퍼스 필터 모두에 나와야 한다.
+      if (!matchesCampus(c.campus, filters.campus)) return false;
       if (filters.openOnly && c.memberCount >= c.capacity) return false;
       return true;
     })
@@ -219,7 +226,9 @@ export function Board({
                 <ConnectCard
                   key={c.id}
                   c={c}
-                  onFavorite={() => !loggedIn && setPrompt(true)}
+                  favorited={favs.has(c.id)}
+                  loggedIn={loggedIn}
+                  onBlocked={() => setPrompt(true)}
                 />
               ))}
             </div>

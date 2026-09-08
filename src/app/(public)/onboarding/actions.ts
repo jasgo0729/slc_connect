@@ -85,5 +85,7 @@ export async function submitBinding(
   await createSession(userId, hdrs.get('user-agent') ?? undefined);
   jar.delete(PENDING_COOKIE);
 
-  redirect(next);
+  // 최초 가입자는 환영·프로필 입력을 거친다. 거기서 스킵하든 저장하든
+  // 원래 가려던 곳(next)으로 돌아간다 — C-14 초대 링크 복귀도 이 경로다.
+  redirect(`/welcome?callbackUrl=${encodeURIComponent(next)}`);
 }

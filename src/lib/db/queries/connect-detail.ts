@@ -32,6 +32,8 @@ export interface ConnectDetail {
   activityPeriod: string | null;
   confirmedAt: Date | null;
   createdAt: Date;
+  /** C-09 개설 반려 사유. 팀장에게만 의미가 있다. */
+  rejectionReason: string | null;
 
   members: { id: string; label: string; residence: string | null }[];
   /** 보는 사람의 상태. 화면 하단 버튼이 이 값으로 갈린다. */
@@ -39,6 +41,10 @@ export interface ConnectDetail {
     isLeader: boolean;
     isMember: boolean;
     application: 'pending' | 'approved' | 'rejected' | 'cancelled' | null;
+    /** D-12 취소에 필요하다. */
+    applicationId: string | null;
+    /** D-03 거절 사유. 결과 화면에서 신청자에게 보여준다. */
+    rejectReason: string | null;
   };
 }
 
@@ -73,7 +79,11 @@ export async function getConnectDetail(
     .orderBy(memberships.joinedAt);
 
   const appRows = await db
-    .select({ status: applications.status })
+    .select({
+      id: applications.id,
+      status: applications.status,
+      rejectReason: applications.rejectReason,
+    })
     .from(applications)
     .where(and(eq(applications.connectId, id), eq(applications.userId, viewerId)))
     .orderBy(sql`${applications.appliedAt} DESC`)
@@ -102,6 +112,7 @@ export async function getConnectDetail(
     activityPeriod: c.activityPeriod,
     confirmedAt: c.confirmedAt,
     createdAt: c.createdAt,
+    rejectionReason: c.rejectionReason,
 
     members: memberRows.map((m) => ({
       id: m.userId,
@@ -113,6 +124,8 @@ export async function getConnectDetail(
       isLeader: mine?.role === 'leader',
       isMember: Boolean(mine),
       application: (appRows[0]?.status as ConnectDetail['viewer']['application']) ?? null,
+      applicationId: appRows[0]?.id ?? null,
+      rejectReason: appRows[0]?.rejectReason ?? null,
     },
   };
 }

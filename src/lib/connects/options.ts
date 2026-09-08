@@ -5,16 +5,23 @@
  * 폼에는 보이는데 저장이 거절되는 일이 생긴다.
  */
 
+/**
+ * 트랙.
+ *
+ * DB 값은 기획 문서의 quantitative·qualitative 를 그대로 쓰고,
+ * 화면에는 취미·도전으로 보여준다. 학생에게는 "정량 트랙"보다
+ * "취미"가 무엇을 하는 곳인지 바로 알려준다.
+ */
 export const TRACKS = [
   {
     value: 'quantitative',
-    label: '정량',
+    label: '취미',
     summary: '자주 만나는 것이 목표',
     detail: '주제는 가볍게, 대신 꾸준히 봅니다. 신청하면 바로 자리가 생기고 만난 만큼 점수가 쌓여요.',
   },
   {
     value: 'qualitative',
-    label: '정성',
+    label: '도전',
     summary: '학기 끝에 무언가 남기는 것이 목표',
     detail: '팀마다 목표가 있어요. 팀장이 신청을 보고 승인하며, 1월에 결과물을 제출합니다.',
   },
@@ -63,6 +70,11 @@ export const TAGLINE_MAX = 40;
  * 최종적으로는 season_config에서 읽어야 하는 값이다.
  */
 export const GOAL_DEADLINE = '2027-01-15';
+
+/** 화면에 쓰는 트랙 이름. 한 곳에서만 바꾸면 되도록 여기 둔다. */
+export function trackLabel(track: string): string {
+  return track === 'qualitative' ? '도전' : '취미';
+}
 
 export const isTrack = (v: string): v is 'quantitative' | 'qualitative' =>
   TRACKS.some((t) => t.value === v);

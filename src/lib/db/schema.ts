@@ -42,6 +42,9 @@ export const roster = pgTable('roster', {
   cohort: text('cohort').notNull(), // 기수
   campus: text('campus').notNull(), // '인문사회' | '자연과학'
   slc: text('slc').notNull(), // 소속 SLC
+  // 명단에 있는 값이라 사용자가 입력할 필요가 없다.
+  // 캠퍼스도 이 값에서 유도한다(lib/roster/campus.ts).
+  major: text('major'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -73,6 +76,9 @@ export const users = pgTable(
     // A-05 프로필 선택 항목. 전부 NULL 허용 = 빈 프로필이 정상 상태.
     major: text('major'),
     availableTimes: text('available_times'),
+    // A-05 활동 선호 요일. 0=일 … 6=토.
+    // 폼에서 받아 놓고 저장할 곳이 없어 조용히 사라지고 있었다.
+    preferredDays: smallint('preferred_days').array(),
     // 방학 중 거주지. G-09 온라인 인정 구간에 만날 수 있는지가 여기 달려 있어
     // 커넥트 상세에서 분포로 보여준다.
     residence: text('residence'),
@@ -248,7 +254,7 @@ export const connects = pgTable(
     // B-08 모집 상태 6종
     check(
       'connects_status_chk',
-      sql`${t.status} IN ('recruiting', 'full_closed', 'early_closed', 'private', 'pending_review', 'confirmed')`,
+      sql`${t.status} IN ('recruiting', 'full_closed', 'early_closed', 'private', 'pending_review', 'rejected', 'confirmed')`,
     ),
     check('connects_track_chk', sql`${t.track} IN ('quantitative', 'qualitative')`),
     check('connects_capacity_chk', sql`${t.capacity} BETWEEN 4 AND 7`),
@@ -293,6 +299,9 @@ export const applications = pgTable(
     decidedAt: timestamp('decided_at', { withTimezone: true }),
     decidedBy: uuid('decided_by').references(() => users.id),
     rejectReason: text('reject_reason'), // D-03 정형 문구
+    // 정성 트랙 지원서. 팀장이 승인 여부를 판단할 유일한 재료라
+    // 정량 트랙(즉시 참여)에서는 비어 있다.
+    message: text('message'),
   },
   (t) => [
     // 살아 있는 지원만 중복 차단. 취소/반려 건은 남겨 재신청을 허용한다.

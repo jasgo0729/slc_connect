@@ -1,7 +1,7 @@
 {
-  "name": "slc_connect",
-  "version": "0.1.0",
+  "name": "connect-auth",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -9,24 +9,26 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "roster:import": "tsx scripts/import-roster.ts"
+    "roster:import": "tsx --env-file=.env.local src/scripts/import-roster.ts"
   },
   "dependencies": {
     "arctic": "^3.7.0",
-    "dotenv": "^17.4.2",
-    "drizzle-orm": "^0.45.2",
-    "next": "16.3.0",
-    "pg": "^8.22.0",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "drizzle-orm": "^0.44.0",
+    "exceljs": "^4.4.0",
+    "next": "^16.3.0",
+    "pg": "^8.13.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/pg": "^8.20.4",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "babel-plugin-react-compiler": "1.0.0",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.2.4",
+    "dotenv": "^16.4.0",
     "drizzle-kit": "^0.31.0",
-    "typescript": "^5"
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
   }
 }

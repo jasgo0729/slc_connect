@@ -117,5 +117,5 @@ export async function submitCreate(
     activityPeriod,
   });
 
-  redirect(`/connects/${created.id}?created=1`);
+  redirect(`/connects/${created.id}/created`);
 }

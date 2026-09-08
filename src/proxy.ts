@@ -41,12 +41,8 @@ export function proxy(req: NextRequest) {
  * API·정적 파일은 여기 들어오지 않는다.
  */
 export const config = {
-  matcher: [
-    '/connects/:path*',
-    '/recommend/:path*',
-    '/ranking/:path*',
-    '/games/:path*',
-    '/me/:path*',
-    '/admin/:path*',
-  ],
+  // 비로그인에게 열린 곳은 여기 넣지 않는다 — 씨앗판 목록, 커넥트 상세,
+  // 초대 링크, 추천·랭킹·MBTI 안내. 로그인이 필요한 화면은 각자
+  // getCurrentUser()로 다시 확인하므로 이 목록은 값싼 1차 관문일 뿐이다.
+  matcher: ['/me/:path*', '/notifications/:path*', '/admin/:path*'],
 };

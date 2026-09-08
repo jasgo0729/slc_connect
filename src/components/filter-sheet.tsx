@@ -13,7 +13,7 @@ export const STATUS_OPTS = [
   { value: '', label: '전체' },
   { value: 'recruiting', label: '모집 중' },
   { value: 'full_closed', label: '마감' },
-  { value: 'pending_review', label: '정성 확인 대기' },
+  { value: 'pending_review', label: '도전 확인 대기' },
 ];
 
 export const CAMPUS_OPTS = [

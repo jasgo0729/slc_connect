@@ -1,7 +1,8 @@
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, or, sql } from 'drizzle-orm';
 import { db } from '../client';
 import { connects } from '../schema';
 import type { ConnectCardData } from '@/components/connect-card';
+import { CAMPUS_BOTH } from '@/lib/connects/campus-filter';
 
 /**
  * B-01 씨앗판 목록.
@@ -42,8 +43,11 @@ export async function listConnects(f: ListFilters): Promise<ConnectCardData[]> {
   if (f.track === 'quantitative' || f.track === 'qualitative') {
     where.push(eq(connects.track, f.track));
   }
-  if (f.campus) {
-    where.push(eq(connects.campus, f.campus));
+  if (f.campus === CAMPUS_BOTH) {
+    where.push(eq(connects.campus, CAMPUS_BOTH));
+  } else if (f.campus) {
+    // '공통' 커넥트는 양 캠퍼스 모두에서 활동하므로 함께 보여준다.
+    where.push(or(eq(connects.campus, f.campus), eq(connects.campus, CAMPUS_BOTH))!);
   }
 
   // B-06 정렬. 기본은 최신순 — 모집 초반에는 찜이 전부 0이라
