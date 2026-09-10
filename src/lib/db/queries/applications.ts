@@ -1,6 +1,7 @@
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { db } from '../client';
 import { applications, connects, memberships, roster, users } from '../schema';
+import { isExampleConnect } from '@/lib/connects/options';
 
 /**
  * D-01·D-02·D-03·D-04·D-06·D-12 신청과 승인.
@@ -22,6 +23,7 @@ export type ApplyBlock =
   | 'ALREADY_MEMBER'
   | 'ALREADY_APPLIED'
   | 'ALREADY_IN_TRACK' // 같은 트랙의 다른 커넥트에 이미 속해 있다
+  | 'EXAMPLE' // 보여주려고 올려 둔 예시라 신청을 받지 않는다
   | 'FULL';
 
 export const APPLY_MESSAGES: Record<ApplyBlock, string> = {
@@ -31,6 +33,7 @@ export const APPLY_MESSAGES: Record<ApplyBlock, string> = {
   ALREADY_MEMBER: '이미 참여 중인 커넥트예요.',
   ALREADY_APPLIED: '이미 신청했어요. 팀장이 확인하면 알려드릴게요.',
   ALREADY_IN_TRACK: '',  // 트랙 이름이 들어가야 해서 호출하는 쪽에서 만든다
+  EXAMPLE: '도전 트랙이 어떤 모습인지 보여드리려고 올려 둔 예시예요. 같은 커넥트를 직접 만들어 보세요.',
   FULL: '자리가 모두 찼어요.',
 };
 
@@ -66,6 +69,9 @@ export async function applyToConnect(
     if (c.status === 'pending_review') {
       return { ok: false, reason: 'PENDING_REVIEW' } as const;
     }
+    // 예시 커넥트는 신청을 받지 않는다. 화면에서도 막지만 서버 액션은
+    // 폼을 거치지 않고 부를 수 있으므로 여기가 실제 방어선이다.
+    if (isExampleConnect(c)) return { ok: false, reason: 'EXAMPLE' } as const;
 
     const already = await tx
       .select({ id: memberships.id })

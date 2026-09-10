@@ -12,7 +12,7 @@ import { IconArrowLeft, IconPin } from '@/components/ui/icon';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getConnectDetail, summarizeResidence } from '@/lib/db/queries/connect-detail';
 import { countFavorites, getFavoriteIds } from '@/lib/db/queries/favorites';
-import { CONDITIONS, DAYS, GOAL_TYPES, trackLabel } from '@/lib/connects/options';
+import { CONDITIONS, DAYS, GOAL_TYPES, isExampleConnect, trackLabel } from '@/lib/connects/options';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +51,7 @@ export default async function ConnectDetailPage({ params }: Props) {
   // C-11 비공개 커넥트는 목록에 없다. 링크를 아는 사람은 볼 수 있어야
   // 초대가 성립하므로, 여기서는 막지 않는다.
 
+  const isExample = isExampleConnect(c);
   const residence = summarizeResidence(c.members);
   const days = c.availableDays.map((d) => DAYS[d]).filter(Boolean);
   const conditionLabels = c.conditions
@@ -78,8 +79,11 @@ export default async function ConnectDetailPage({ params }: Props) {
               {!c.isPublic && <Badge tone="closed">비공개</Badge>}
             </div>
 
-            {/* 사전 개설은 성격이 달라 먼저 알린다. */}
-            {c.isPreCreated && <PreCreatedNotice />}
+            {/* 사전 개설은 성격이 달라 먼저 알린다. 도전 트랙이면
+                신청을 받지 않는 예시라 안내가 아예 다르다. */}
+            {c.isPreCreated && (
+              <PreCreatedNotice isExample={isExample} description={c.description} />
+            )}
 
             <p className="detail-desc">{c.description || c.tagline}</p>
 
@@ -166,6 +170,7 @@ export default async function ConnectDetailPage({ params }: Props) {
             status={c.status}
             track={c.track}
             viewer={c.viewer}
+            isExample={isExample}
             favorited={favIds.has(c.id)}
             loggedIn
             favoriteCount={favoriteCount}

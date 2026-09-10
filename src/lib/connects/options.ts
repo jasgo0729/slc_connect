@@ -98,3 +98,17 @@ export const isTrack = (v: string): v is 'quantitative' | 'qualitative' =>
 export const isCampus = (v: string) => CAMPUSES.some((c) => c.value === v);
 export const isCondition = (v: string) => CONDITIONS.some((c) => c.value === v);
 export const isGoalType = (v: string) => GOAL_TYPES.some((g) => g.value === v);
+
+/**
+ * 예시 커넥트 판별.
+ *
+ * TF 사전 개설은 취미 트랙만 하기로 되어 있다(요소 문서 2.2.2).
+ * 따라서 사전 개설이면서 도전 트랙인 것은 "도전이 어떤 모습인지"
+ * 보여주려고 올려 둔 예시다. 신청을 받지 않는다.
+ *
+ * 이름의 [예시] 접두사로 가르지 않는다. 운영자가 접두사를 빠뜨리면
+ * 신청이 열려 버리고, 그 사실을 아무도 모른 채 사람이 들어온다.
+ */
+export function isExampleConnect(c: { isPreCreated: boolean; track: string }): boolean {
+  return c.isPreCreated && c.track === 'qualitative';
+}

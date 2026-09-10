@@ -1538,3 +1538,7 @@ a.admin-card:hover { border-color: var(--blue-soft); }
 .pre-notes li::before {
   content: '※'; position: absolute; left: 0; color: var(--s300);
 }
+
+/* 예시 커넥트 안내의 두 버튼 */
+.pre-actions { display: grid; grid-template-columns: 1fr 1.3fr; gap: 10px; margin-top: 20px; }
+.pre-actions .btn { text-align: center; }

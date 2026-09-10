@@ -26,6 +26,7 @@ export function DetailActions({
   favorited,
   loggedIn,
   favoriteCount,
+  isExample = false,
 }: {
   connectId: string;
   capacity: number;
@@ -40,6 +41,8 @@ export function DetailActions({
   };
   favorited: boolean;
   loggedIn: boolean;
+  /** 보여주기용 예시 커넥트. 신청을 받지 않는다. */
+  isExample?: boolean;
   /** U-06 — 정확한 찜 수는 팀장에게만 넘어온다. */
   favoriteCount?: number;
 }) {
@@ -134,12 +137,14 @@ export function DetailActions({
     );
   } else {
     const blocked =
+      isExample ||
       status === 'confirmed' ||
       status === 'pending_review' ||
       (open === 0 && status !== 'early_closed');
 
-    const label =
-      status === 'confirmed'
+    const label = isExample
+      ? '예시라 신청할 수 없어요'
+      : status === 'confirmed'
         ? '모집이 끝났어요'
         : status === 'pending_review'
           ? '확인 대기 중이에요'
@@ -164,8 +169,9 @@ export function DetailActions({
     );
   }
 
-  const note =
-    viewer.application === 'pending'
+  const note = isExample
+    ? '도전 트랙이 어떤 모습인지 보여드리는 예시예요. 같은 커넥트를 직접 만들어 보세요.'
+    : viewer.application === 'pending'
       ? '팀장이 확인하면 알림으로 알려드려요.'
       : viewer.application === 'rejected'
         ? '지난 신청은 받아들여지지 않았어요. 다시 신청할 수 있어요.'
