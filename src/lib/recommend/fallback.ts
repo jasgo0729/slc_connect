@@ -84,14 +84,19 @@ export function fallbackPicks(
   candidates: Candidate[],
   seeker: Seeker,
   count: number,
+  /** 앞서 보여준 커넥트. 점수를 낮춰 뒤로 민다. */
+  seenIds: string[] = [],
 ): Pick[] {
+  const seen = new Set(seenIds);
   return (
     candidates
       // 부르는 쪽에서 이미 걸렀지만 여기서도 확인한다. 자리가 없는
       // 커넥트를 추천하면 눌러 본 뒤에야 막히는 걸 알게 된다.
       .filter((c) => c.memberCount < c.capacity)
   )
-    .map((c) => ({ c, s: score(c, seeker) }))
+    // 이미 본 것은 크게 감점한다. 빼지 않는 이유는 후보가 모자랄 때
+    // 세 개를 채우지 못하기 때문이다. 남은 것이 있으면 그쪽이 먼저 온다.
+    .map((c) => ({ c, s: score(c, seeker) - (seen.has(c.id) ? 100 : 0) }))
     .sort((a, b) => b.s - a.s)
     .slice(0, count)
     .map(({ c }) => ({ connectId: c.id, reason: labelFor(c, seeker) }));

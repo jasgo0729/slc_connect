@@ -58,6 +58,8 @@ export async function recommend(
   seeker: Seeker,
   candidates: Candidate[],
   count = 3,
+  /** 앞서 보여준 커넥트 id. 후보에 남아 있다면 뒤로 미룬다. */
+  seenIds: string[] = [],
 ): Promise<RecommendResult> {
   if (candidates.length === 0) return { picks: [], isFallback: false };
 
@@ -65,7 +67,7 @@ export async function recommend(
   // 키가 없으면 조용히 규칙으로 간다. 개발 환경에서 키 없이도
   // 화면 전체가 동작해야 만들면서 확인할 수 있다.
   if (!key) {
-    return { picks: fallbackPicks(candidates, seeker, count), isFallback: true };
+    return { picks: fallbackPicks(candidates, seeker, count, seenIds), isFallback: true };
   }
 
   let picks: Pick[] = [];
@@ -83,7 +85,17 @@ export async function recommend(
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: buildUserPrompt(seeker, candidates, count) },
+          {
+            role: 'user',
+            content: buildUserPrompt(
+              seeker,
+              candidates,
+              count,
+              seenIds
+                .map((id) => candidates.findIndex((c) => c.id === id))
+                .filter((i) => i >= 0),
+            ),
+          },
         ],
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -101,7 +113,7 @@ export async function recommend(
   }
 
   if (picks.length === 0) {
-    return { picks: fallbackPicks(candidates, seeker, count), isFallback: true };
+    return { picks: fallbackPicks(candidates, seeker, count, seenIds), isFallback: true };
   }
 
   // 개수가 모자라면 규칙으로 채운다. 두 개만 보여주면 고를 여지가 좁다.
@@ -111,6 +123,7 @@ export async function recommend(
       candidates.filter((c) => !already.has(c.id)),
       seeker,
       count - picks.length,
+      seenIds,
     );
     picks = [...picks, ...extra];
   }

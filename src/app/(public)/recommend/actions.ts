@@ -31,6 +31,13 @@ export interface RecommendState {
   error?: string;
   /** 규칙으로 골랐다는 표시. 화면에서 굳이 알리지는 않는다. */
   isFallback?: boolean;
+  /**
+   * 아직 안 보여준 후보가 남았는지.
+   *
+   * 다 돌았으면 '다시 추천받기'가 같은 것을 되풀이하게 된다.
+   * 그 전에 화면이 다른 말을 해야 한다.
+   */
+  exhausted?: boolean;
 }
 
 /** 후보는 모집 중이거나 조기 마감뿐이다(getCandidates 참고). */
@@ -46,7 +53,11 @@ const STATUS: Record<string, { label: string; tone: string }> = {
  * MBTI를 안 했어도 동작해야 한다 — 그 사람이야말로 추천이 필요한
  * 쪽이고, 검사부터 하라고 돌려보내면 거기서 이탈한다.
  */
-export async function runRecommend(keyword: string): Promise<RecommendState> {
+export async function runRecommend(
+  keyword: string,
+  /** 앞선 추천에서 이미 보여준 커넥트. '다시 추천받기'가 쌓아 보낸다. */
+  seenIds: string[] = [],
+): Promise<RecommendState> {
   const user = await getCurrentUser();
   if (!user) redirect('/login?callbackUrl=%2Frecommend');
 
@@ -80,9 +91,16 @@ export async function runRecommend(keyword: string): Promise<RecommendState> {
     keyword: keyword.slice(0, 200),
   };
 
-  const { picks, isFallback } = await recommend(seeker, candidates, 3);
+  // 이미 보여준 것은 후보에서 뺀다. 다만 남은 수가 세 개보다 적으면
+  // 빼지 않는다 — 두 개만 보여주는 것보다 일부 겹치는 편이 낫다.
+  const seen = new Set(seenIds.filter((id) => typeof id === 'string'));
+  const fresh = candidates.filter((c) => !seen.has(c.id));
+  const pool = fresh.length >= 3 ? fresh : candidates;
+  const exhausted = fresh.length === 0;
 
-  const byId = new Map(candidates.map((c) => [c.id, c]));
+  const { picks, isFallback } = await recommend(seeker, pool, 3, seenIds);
+
+  const byId = new Map(pool.map((c) => [c.id, c]));
   const results: RecommendedConnect[] = picks
     .map((p) => {
       const c = byId.get(p.connectId);
@@ -110,5 +128,5 @@ export async function runRecommend(keyword: string): Promise<RecommendState> {
     isFallback,
   );
 
-  return { results, isFallback };
+  return { results, isFallback, exhausted };
 }

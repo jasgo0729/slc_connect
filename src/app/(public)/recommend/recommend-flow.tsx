@@ -26,16 +26,26 @@ export function RecommendFlow({ needsProfile }: { needsProfile: boolean }) {
   const [stage, setStage] = useState<Stage>(needsProfile ? 'ask' : 'loading');
   const [state, setState] = useState<RecommendState>({});
 
-  const run = useCallback(async () => {
-    setStage('loading');
-    setState({});
-    const r = await runRecommend('');
-    setState(r);
-    setStage('done');
-  }, []);
+  // 이번 방문에서 보여준 커넥트를 쌓아 둔다. '다시 추천받기'가
+  // 같은 셋을 되풀이하면 버튼을 누를 이유가 없다.
+  const [seen, setSeen] = useState<string[]>([]);
+
+  const run = useCallback(
+    async (carry: string[]) => {
+      setStage('loading');
+      setState({});
+      const r = await runRecommend('', carry);
+      setState(r);
+      setSeen([...new Set([...carry, ...(r.results ?? []).map((x) => x.id)])]);
+      setStage('done');
+    },
+    [],
+  );
 
   useEffect(() => {
-    if (stage === 'loading' && !state.results && !state.error) void run();
+    if (stage === 'loading' && !state.results && !state.error) void run(seen);
+    // seen 은 의도적으로 뺀다. 넣으면 결과가 쌓일 때마다 다시 돈다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, state.results, state.error, run]);
 
   if (stage === 'ask') {
@@ -115,9 +125,36 @@ export function RecommendFlow({ needsProfile }: { needsProfile: boolean }) {
             ))}
           </div>
 
-          <button type="button" className="btn btn--line btn--block reco-again" onClick={run}>
-            다시 추천받기
-          </button>
+          {/* 후보를 다 돌았으면 같은 것을 되풀이하게 된다. 그때는
+              처음부터 다시 보겠냐고 묻는 편이 정직하다. */}
+          {state.exhausted ? (
+            <div className="reco-exhausted">
+              <p>보여드릴 수 있는 커넥트를 다 돌았어요.</p>
+              <div className="reco-empty-actions">
+                <button
+                  type="button"
+                  className="btn btn--line"
+                  onClick={() => {
+                    setSeen([]);
+                    void run([]);
+                  }}
+                >
+                  처음부터 다시 보기
+                </button>
+                <Link href="/connects" className="btn">
+                  씨앗판에서 직접 고르기
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="btn btn--line btn--block reco-again"
+              onClick={() => void run(seen)}
+            >
+              다시 추천받기
+            </button>
+          )}
         </>
       )}
     </main>

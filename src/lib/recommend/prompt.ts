@@ -81,12 +81,31 @@ reason 은 카드 위에 한 줄로 붙는 짧은 라벨입니다.
 반드시 아래 JSON만 출력합니다. 설명이나 코드블록 없이.
 {"picks":[{"index":0,"reason":"..."},{"index":3,"reason":"..."},{"index":7,"reason":"..."}]}`;
 
-export function buildUserPrompt(seeker: Seeker, candidates: Candidate[], count: number): string {
+export function buildUserPrompt(
+  seeker: Seeker,
+  candidates: Candidate[],
+  count: number,
+  /**
+   * 앞선 추천에서 이미 보여준 커넥트의 번호.
+   *
+   * 후보에서 아예 빼는 것이 먼저지만, 남은 수가 모자라면 뺄 수 없다.
+   * 그때는 목록에 두되 뒤로 미루게 한다 — 세 개를 채우지 못해
+   * 빈손으로 돌려보내는 것보다 낫다.
+   */
+  seenIndexes: number[] = [],
+): string {
+  const seenNote =
+    seenIndexes.length > 0
+      ? `\n\n## 이미 보여준 커넥트
+번호 ${seenIndexes.join(', ')} 는 앞서 추천했습니다.
+다른 것을 우선하되, 남은 후보가 모자라면 골라도 됩니다.`
+      : '';
+
   return `## 이 사람
 ${describeSeeker(seeker)}
 
 ## 후보 커넥트 (${candidates.length}개)
-${candidates.map(describeCandidate).join('\n\n')}
+${candidates.map(describeCandidate).join('\n\n')}${seenNote}
 
 위 후보 중 이 사람에게 가장 잘 맞을 ${count}개를 골라 주세요.`;
 }
