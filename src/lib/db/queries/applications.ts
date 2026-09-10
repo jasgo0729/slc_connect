@@ -18,9 +18,10 @@ export type ApplyResult =
 export type ApplyBlock =
   | 'NOT_FOUND'
   | 'CONFIRMED' // 팀 구성이 끝났다
-  | 'PENDING_REVIEW' // 정성 확인 대기 중이라 아직 못 받는다
+  | 'PENDING_REVIEW' // 도전 확인 대기 중이라 아직 못 받는다
   | 'ALREADY_MEMBER'
   | 'ALREADY_APPLIED'
+  | 'ALREADY_IN_TRACK' // 같은 트랙의 다른 커넥트에 이미 속해 있다
   | 'FULL';
 
 export const APPLY_MESSAGES: Record<ApplyBlock, string> = {
@@ -29,6 +30,7 @@ export const APPLY_MESSAGES: Record<ApplyBlock, string> = {
   PENDING_REVIEW: '운영진 확인이 끝나면 신청할 수 있어요.',
   ALREADY_MEMBER: '이미 참여 중인 커넥트예요.',
   ALREADY_APPLIED: '이미 신청했어요. 팀장이 확인하면 알려드릴게요.',
+  ALREADY_IN_TRACK: '',  // 트랙 이름이 들어가야 해서 호출하는 쪽에서 만든다
   FULL: '자리가 모두 찼어요.',
 };
 
@@ -78,6 +80,23 @@ export async function applyToConnect(
       .limit(1);
     if (already.length > 0) return { ok: false, reason: 'ALREADY_MEMBER' } as const;
 
+    // 한 사람은 트랙당 하나에만 속한다. 잠금 안에서 확인해야
+    // 두 커넥트에 동시에 신청해 양쪽 다 들어가는 일이 없다.
+    const sameTrack = await tx
+      .select({ id: memberships.id })
+      .from(memberships)
+      .innerJoin(connects, eq(memberships.connectId, connects.id))
+      .where(
+        and(
+          eq(memberships.userId, userId),
+          sql`${memberships.leftAt} IS NULL`,
+          eq(connects.track, c.track),
+          sql`${connects.status} <> 'rejected'`,
+        ),
+      )
+      .limit(1);
+    if (sameTrack.length > 0) return { ok: false, reason: 'ALREADY_IN_TRACK' } as const;
+
     const live = await tx
       .select({ id: applications.id })
       .from(applications)
@@ -126,7 +145,7 @@ export async function applyToConnect(
 
 export type DecideResult =
   | { ok: true }
-  | { ok: false; reason: 'NOT_LEADER' | 'NOT_FOUND' | 'NOT_PENDING' | 'FULL' };
+  | { ok: false; reason: 'NOT_LEADER' | 'NOT_FOUND' | 'NOT_PENDING' | 'FULL' | 'ALREADY_IN_TRACK' };
 
 /** 팀장 여부. 권한 판정은 항상 memberships를 본다(created_by가 아니라). */
 async function isLeader(
@@ -184,6 +203,22 @@ export async function approveApplication(
       .where(and(eq(memberships.connectId, c.id), sql`${memberships.leftAt} IS NULL`));
     const memberCount = counted[0]?.n ?? 0;
     if (memberCount >= c.capacity) return { ok: false, reason: 'FULL' } as const;
+
+    // 신청한 뒤 다른 팀에 들어갔을 수 있다. 여기서 확인하지 않으면
+    // 팀장이 승인하는 순간 그 사람이 같은 트랙 두 곳에 속하게 된다.
+    const elsewhere = await tx
+      .select({ id: memberships.id })
+      .from(memberships)
+      .innerJoin(connects, eq(memberships.connectId, connects.id))
+      .where(
+        and(
+          eq(memberships.userId, found.app.userId),
+          sql`${memberships.leftAt} IS NULL`,
+          eq(connects.track, c.track),
+        ),
+      )
+      .limit(1);
+    if (elsewhere.length > 0) return { ok: false, reason: 'ALREADY_IN_TRACK' } as const;
 
     await tx
       .update(applications)

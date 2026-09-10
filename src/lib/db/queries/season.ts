@@ -17,8 +17,8 @@ export const SEASON_KEYS = {
   },
   activityStart: {
     key: 'activity_start',
-    label: '활동 시작일',
-    hint: '가입 완료 안내에 표시됩니다.',
+    label: '단톡방 개설일',
+    hint: '가입 완료 화면에 "○월 ○일 카카오톡 톡방이 만들어집니다"로 표시됩니다.',
     type: 'date' as const,
   },
   rankingMode: {

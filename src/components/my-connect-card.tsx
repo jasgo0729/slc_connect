@@ -44,7 +44,11 @@ export function MyConnectCard({
         {my ? (
           <>
             <span className={`badge badge--${my.tone}`}>{my.text}</span>
-            {c.myApplication === 'approved' && <span className="ccard-count">소속 확정</span>}
+            {/* 취미는 신청과 동시에 참여가 확정되므로 '소속 확정'이
+                따로 알릴 내용이 없다. 승인 절차가 있는 도전에만 붙인다. */}
+            {c.myApplication === 'approved' && c.track === 'qualitative' && (
+              <span className="ccard-count">소속 확정</span>
+            )}
           </>
         ) : (
           <>

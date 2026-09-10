@@ -3,6 +3,33 @@ import { ResultScreen } from '@/components/result-screen';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getConnectDetail } from '@/lib/db/queries/connect-detail';
 import { rejectLabel } from '@/lib/connects/reject-reasons';
+import { SEASON_KEYS, getSeasonConfig } from '@/lib/db/queries/season';
+
+/**
+ * 단톡방이 열리는 날.
+ *
+ * 날짜를 코드에 박지 않는다. 일정이 바뀌면 배포해야 하고, 그때
+ * 이 화면 하나를 기억해 내는 사람이 없다. 운영 화면에서 고친다.
+ */
+function chatOpenText(activityStart?: string): React.ReactNode {
+  if (!activityStart) {
+    return (
+      <>
+        곧 커넥트 카카오톡 톡방이 만들어집니다.
+        <br />
+        그때 커넥트 사람들을 만나봐요!
+      </>
+    );
+  }
+  const [, m, d] = activityStart.split('-');
+  return (
+    <>
+      {Number(m)}월 {Number(d)}일 커넥트 카카오톡 톡방이 만들어집니다.
+      <br />
+      그때 커넥트 사람들을 만나봐요!
+    </>
+  );
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -25,19 +52,15 @@ export default async function ApplyResultPage({ params }: Props) {
   const c = await getConnectDetail(id, user.id);
   if (!c) notFound();
 
+  const season = await getSeasonConfig();
+
   // 참여가 확정된 경우. 정량 트랙은 신청과 동시에 여기로 온다.
   if (c.viewer.isMember && !c.viewer.isLeader) {
     return (
       <ResultScreen
         tone="celebrate"
         title="가입이 완료되었습니다!"
-        body={
-          <>
-            활동이 시작되는 D+10에
-            <br />
-            카카오톡 단톡방에서 만나요.
-          </>
-        }
+        body={chatOpenText(season[SEASON_KEYS.activityStart.key])}
         actions={[{ href: `/connects/${id}`, label: '확인' }]}
       />
     );

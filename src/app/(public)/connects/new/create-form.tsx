@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import {
   CAMPUSES,
@@ -66,6 +66,30 @@ export function CreateForm() {
 
   const e = state.errors ?? {};
   const blockedLabel = state.blockedTrack === 'qualitative' ? '도전' : '취미';
+
+  // 검증에 걸려 돌아오면 서버가 받은 값으로 폼을 되돌린다.
+  // 입력을 state로 들고 있어도 React 19의 폼 초기화와 겹치면
+  // 무엇이 남고 무엇이 사라졌는지가 갈린다. 서버 값으로 맞춰 두면
+  // 어떤 경우에도 화면이 같아진다.
+  const v = state.values;
+  useEffect(() => {
+    if (!v) return;
+    setTrack(v.track);
+    setName(v.name);
+    setTagline(v.tagline);
+    setDesc(v.description);
+    setCampus(v.campus);
+    setLocation(v.location);
+    setContact(v.contact);
+    setCapacity(v.capacity || CAPACITY_DEFAULT);
+    setDays(v.availableDays);
+    setConds(v.conditions);
+    setIsPublic(v.isPublic);
+    setGoalType(v.goalType);
+    setGoalDetail(v.goalDetail);
+    setGoalDate(v.goalDate);
+    setPeriod(v.activityPeriod);
+  }, [v]);
   const toggleDay = (d: number) =>
     setDays((v) => (v.includes(d) ? v.filter((x) => x !== d) : [...v, d]));
   const toggleCond = (c: string) =>

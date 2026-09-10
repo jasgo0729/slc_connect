@@ -7,7 +7,10 @@
 const STATUS: Record<string, { text: string; tone: string }> = {
   recruiting: { text: '모집 중', tone: 'open' },
   full_closed: { text: '마감', tone: 'closed' },
-  early_closed: { text: '승인받고 참여', tone: 'review' },
+  // 목록에서는 상태를 그대로 알린다. '승인받고 참여'는 무엇을 해야
+  // 하는지는 알려주지만 왜 그런지를 감춘다. 상세 화면의 버튼에서
+  // '승인받고 참여하기'로 안내하는 것으로 충분하다.
+  early_closed: { text: '조기 마감', tone: 'review' },
   pending_review: { text: '도전 확인 대기', tone: 'review' },
   confirmed: { text: '활동 중', tone: 'closed' },
   private: { text: '비공개', tone: 'closed' },

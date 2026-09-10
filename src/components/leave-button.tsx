@@ -8,33 +8,33 @@ import { leaveAction } from '@/app/(public)/connects/[id]/actions';
 /**
  * G-15 이탈 · 커넥트 삭제.
  *
- * 팀장은 후임을 지정해야 나갈 수 있다. 후임 선택을 필수 입력으로 두면
- * 팀장 없는 커넥트가 구조적으로 생기지 않는다.
+ * 팀장이 나가면 다음으로 들어온 사람에게 자동으로 넘어간다.
+ * 고르게 하면 나가려는 사람이 한 번 더 판단해야 하고, 그 부담 때문에
+ * 이탈을 미루면 팀 전체가 애매한 상태로 남는다.
  *
- * 팀장 혼자뿐이면 넘길 사람이 없으므로 커넥트가 지워진다.
- * 되돌릴 수 없어 문구를 다르게 쓴다.
+ * 누구에게 넘어가는지는 미리 보여준다. 모른 채로 넘기게 하면
+ * 나중에 "왜 저 사람이 팀장이지"가 된다.
  */
 export function LeaveButton({
   connectId,
   isLeader,
-  candidates,
+  nextLeader,
 }: {
   connectId: string;
   isLeader: boolean;
-  candidates: { id: string; label: string }[];
+  /** 들어온 순서로 다음 사람. 없으면 팀장 혼자다. */
+  nextLeader?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [successor, setSuccessor] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
-  const alone = isLeader && candidates.length === 0;
-  const needsSuccessor = isLeader && candidates.length > 0;
+  const alone = isLeader && !nextLeader;
 
   const run = () =>
     start(async () => {
       setError(null);
-      const r = await leaveAction(connectId, successor || undefined);
+      const r = await leaveAction(connectId);
       if (r.error) {
         setError(r.error);
         return;
@@ -56,31 +56,10 @@ export function LeaveButton({
           <p className="sheet-sub">
             {alone
               ? '아직 팀원이 없어 커넥트가 사라집니다. 되돌릴 수 없어요.'
-              : needsSuccessor
-                ? '팀장 자리를 넘길 사람을 골라주세요.'
+              : isLeader
+                ? `팀장 자리는 ${nextLeader}님에게 넘어갑니다.`
                 : '다시 신청하면 들어올 수 있어요.'}
           </p>
-
-          {needsSuccessor && (
-            <div className="field" style={{ marginTop: 18 }}>
-              <label className="field-label" htmlFor="successor">
-                다음 팀장
-              </label>
-              <select
-                id="successor"
-                className="input"
-                value={successor}
-                onChange={(e) => setSuccessor(e.target.value)}
-              >
-                <option value="">선택해주세요</option>
-                {candidates.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
 
           {error && <Notice>{error}</Notice>}
 
@@ -88,12 +67,17 @@ export function LeaveButton({
             type="button"
             className="btn btn--block btn--danger"
             style={{ marginTop: 20 }}
-            disabled={pending || (needsSuccessor && !successor)}
+            disabled={pending}
             onClick={run}
           >
             {pending ? '처리 중…' : alone ? '삭제하기' : '나가기'}
           </button>
-          <button type="button" className="textbtn" style={{ width: '100%' }} onClick={() => setOpen(false)}>
+          <button
+            type="button"
+            className="textbtn"
+            style={{ width: '100%' }}
+            onClick={() => setOpen(false)}
+          >
             취소
           </button>
         </div>

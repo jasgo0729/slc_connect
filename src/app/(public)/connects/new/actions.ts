@@ -14,8 +14,35 @@ import {
   isTrack,
 } from '@/lib/connects/options';
 
+/**
+ * 제출한 값을 그대로 돌려준다.
+ *
+ * React 19는 폼 액션이 끝나면 폼을 초기화한다. 입력을 state로 들고
+ * 있으면 대부분 유지되지만, 검증에 걸려 돌아왔을 때 무엇이 남고
+ * 무엇이 사라졌는지가 브라우저와 렌더 시점에 따라 갈린다.
+ * 서버가 받은 값을 되돌려주고 화면이 그걸로 복원하면 그 차이가 없어진다.
+ */
+export interface SubmittedValues {
+  name: string;
+  track: string;
+  tagline: string;
+  description: string;
+  campus: string;
+  location: string;
+  contact: string;
+  capacity: number;
+  isPublic: boolean;
+  availableDays: number[];
+  conditions: string[];
+  goalType: string;
+  goalDetail: string;
+  goalDate: string;
+  activityPeriod: string;
+}
+
 export interface CreateState {
   errors?: Record<string, string>;
+  values?: SubmittedValues;
   /**
    * 중복 개설처럼 폼을 고쳐서 해결할 수 없는 경우.
    * 입력칸 아래 작은 글씨로는 눈에 띄지 않아 화면 가운데에 알린다.
@@ -97,19 +124,37 @@ export async function submitCreate(
     if (!goalDate) {
       errors.goalDate = '목표 시점을 정해주세요.';
     } else if (goalDate > GOAL_DEADLINE) {
-      // 정성 최종 산출물 마감이 1월 중순이다. 그 뒤를 목표로 잡은 팀은
+      // 산출물 마감이 1월 말이다. 그 뒤를 목표로 잡은 팀은
       // 시즌 안에 결과를 낼 수 없으므로 개설 시점에 걸러야 한다.
       errors.goalDate = '산출물 마감일(1월 31일) 이전으로 정해주세요.';
     }
   }
 
-  // 한 사람이 같은 트랙의 팀을 여럿 이끌면 어느 쪽도 굴러가지 않는다.
+  const values: SubmittedValues = {
+    name,
+    track,
+    tagline,
+    description,
+    campus,
+    location,
+    contact,
+    capacity,
+    isPublic,
+    availableDays,
+    conditions,
+    goalType: goalType ?? '',
+    goalDetail: goalDetail ?? '',
+    goalDate: goalDate ?? '',
+    activityPeriod: activityPeriod ?? '',
+  };
+
+  // 한 사람은 트랙당 하나에만 속한다. 개설이든 참여든 같은 제한이다.
   // 폼을 고쳐서 풀 수 있는 문제가 아니므로 알림창으로 알린다.
   if (!errors.track && (await hasConnectInTrack(user.id, track))) {
-    return { blocked: 'DUPLICATE_TRACK', blockedTrack: track };
+    return { blocked: 'DUPLICATE_TRACK', blockedTrack: track, values };
   }
 
-  if (Object.keys(errors).length > 0) return { errors };
+  if (Object.keys(errors).length > 0) return { errors, values };
 
   const created = await createConnect(user.id, {
     name,

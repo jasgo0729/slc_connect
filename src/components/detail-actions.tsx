@@ -66,7 +66,7 @@ export function DetailActions({
 
   const submit = (message: string) => {
     setSheet(false);
-    run(() => applyAction(connectId, message));
+    run(() => applyAction(connectId, message, track));
   };
 
   // 팀장은 신청하지 않는다. 관리 화면으로 보낸다.
@@ -157,7 +157,7 @@ export function DetailActions({
         className="btn"
         style={{ flex: 1 }}
         disabled={blocked || pending}
-        onClick={() => (needsLetter ? setSheet(true) : run(() => applyAction(connectId)))}
+        onClick={() => (needsLetter ? setSheet(true) : run(() => applyAction(connectId, undefined, track)))}
       >
         {pending ? '처리 중…' : label}
       </button>

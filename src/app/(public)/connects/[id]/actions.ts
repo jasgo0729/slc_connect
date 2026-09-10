@@ -36,12 +36,22 @@ export async function favoriteAction(connectId: string): Promise<boolean> {
 export async function applyAction(
   connectId: string,
   message?: string,
+  track?: string,
 ): Promise<{ error?: string }> {
   const user = await getCurrentUser();
   if (!user) redirect(`/login?callbackUrl=${encodeURIComponent(`/connects/${connectId}`)}`);
 
   const result = await applyToConnect(user.id, connectId, message?.slice(0, 200));
-  if (!result.ok) return { error: APPLY_MESSAGES[result.reason] };
+  if (!result.ok) {
+    if (result.reason === 'ALREADY_IN_TRACK') {
+      // 트랙 이름이 들어가야 무엇을 정리해야 하는지 알 수 있다.
+      const label = track === 'qualitative' ? '도전' : '취미';
+      return {
+        error: `이미 참여 중인 ${label} 커넥트가 있어요. ${label} 트랙은 하나에만 참여할 수 있어요.`,
+      };
+    }
+    return { error: APPLY_MESSAGES[result.reason] };
+  }
 
   revalidatePath(`/connects/${connectId}`);
   revalidatePath('/me');
@@ -78,7 +88,9 @@ export async function approveAction(
           ? '자리가 모두 찼어요. 정원을 늘리려면 운영진에게 문의해 주세요.'
           : r.reason === 'NOT_LEADER'
             ? '팀장만 승인할 수 있어요.'
-            : '이미 처리된 신청이에요.',
+            : r.reason === 'ALREADY_IN_TRACK'
+              ? '이 사람은 같은 트랙의 다른 커넥트에 이미 참여 중이에요.'
+              : '이미 처리된 신청이에요.',
     };
   }
 

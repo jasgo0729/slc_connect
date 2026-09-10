@@ -145,9 +145,7 @@ export default async function ConnectDetailPage({ params }: Props) {
                 <LeaveButton
                   connectId={c.id}
                   isLeader={c.viewer.isLeader}
-                  candidates={c.members
-                    .filter((m) => m.id !== user.id)
-                    .map((m) => ({ id: m.id, label: m.label }))}
+                  nextLeader={c.members.find((m) => m.id !== user.id)?.label}
                 />
               </section>
             )}

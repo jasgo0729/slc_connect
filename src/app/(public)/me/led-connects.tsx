@@ -16,7 +16,7 @@ import {
 import type { LedApplicant, MyConnect } from '@/lib/db/queries/me';
 
 /**
- * 내가 개설한 커넥트.
+ * 내가 이끄는 커넥트.
  *
  * 신청 처리를 여기서 바로 한다. 팀 관리 화면이 따로 있지만,
  * 승인 하나 누르러 화면을 옮겨 다니면 신청을 방치하게 된다.
@@ -47,7 +47,7 @@ export function LedConnects({
   if (connects.length === 0) {
     return (
       <section className="card-block">
-        <p className="mini-empty">아직 개설한 커넥트가 없어요.</p>
+        <p className="mini-empty">아직 이끄는 커넥트가 없어요.</p>
       </section>
     );
   }

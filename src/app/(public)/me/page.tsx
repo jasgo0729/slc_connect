@@ -177,8 +177,11 @@ export default async function MyPage() {
         </section>
 
         {/* 내가 팀장인 커넥트를 맨 위에 둔다. 개설한 사람은 참여도
-            하고 있으므로 '참여 중' 목록에서 찾다가 없다고 느낀다. */}
-        <h2 className="me-sectitle me-sectitle--gap">내가 개설한 Connect</h2>
+            하고 있으므로 '참여 중' 목록에서 찾다가 없다고 느낀다.
+            '개설한'이 아니라 '이끄는'인 이유 — 사전 개설 커넥트는
+            운영진이 만들고 먼저 들어온 사람이 팀장이 되며,
+            팀장이 나가면 다음 사람에게 넘어간다. */}
+        <h2 className="me-sectitle me-sectitle--gap">내가 이끄는 Connect</h2>
         <LedConnects connects={led} applicants={applicants} />
 
         <h2 className="me-sectitle me-sectitle--gap">내가 신청한 Connect</h2>

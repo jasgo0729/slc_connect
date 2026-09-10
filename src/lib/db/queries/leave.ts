@@ -10,8 +10,12 @@ import { applications, connects, memberships } from '../schema';
  *   확정 전  자유롭게 나간다. 전원 동의도 최소 4명도 적용하지 않는다.
  *   확정 후  전원 동의 / 4명 미만 불가 / 팀장은 후임 지정 필수.
  *
- * 팀장은 후임을 지정하고 나가야 한다. 혼자뿐이면 나갈 후임이 없으므로
- * 커넥트를 지우는 것이 유일한 길이다.
+ * 팀장이 나가면 다음으로 들어온 사람에게 자동으로 넘어간다.
+ * 고르게 하면 나가려는 사람이 한 번 더 판단해야 하고, 그 부담 때문에
+ * 이탈을 미루면 팀 전체가 애매한 상태로 남는다. 들어온 순서라는
+ * 기준이 이미 있으므로 그대로 쓴다.
+ *
+ * 혼자뿐이면 넘길 사람이 없으므로 커넥트를 지운다.
  */
 export type LeaveResult =
   | { ok: true; deleted?: boolean }
@@ -61,6 +65,7 @@ export async function leaveConnect(
     const mine = mineRows[0];
     if (!mine) return { ok: false, reason: 'NOT_MEMBER' } as const;
 
+    // 들어온 순서대로. 첫 번째가 다음 팀장이 된다.
     const others = await tx
       .select({ userId: memberships.userId })
       .from(memberships)
@@ -70,7 +75,8 @@ export async function leaveConnect(
           ne(memberships.userId, userId),
           sql`${memberships.leftAt} IS NULL`,
         ),
-      );
+      )
+      .orderBy(memberships.joinedAt);
 
     const confirmed = c.status === 'confirmed' || Boolean(c.confirmedAt);
 
@@ -90,8 +96,9 @@ export async function leaveConnect(
     }
 
     if (mine.role === 'leader') {
-      if (!successorId) return { ok: false, reason: 'NEED_SUCCESSOR' } as const;
-      if (!others.some((o) => o.userId === successorId)) {
+      // 지정하지 않으면 가장 먼저 들어온 사람에게 넘긴다.
+      const next = successorId ?? others[0]!.userId;
+      if (!others.some((o) => o.userId === next)) {
         return { ok: false, reason: 'BAD_SUCCESSOR' } as const;
       }
 
@@ -104,7 +111,7 @@ export async function leaveConnect(
       await tx
         .update(memberships)
         .set({ role: 'leader' })
-        .where(and(eq(memberships.connectId, connectId), eq(memberships.userId, successorId)));
+        .where(and(eq(memberships.connectId, connectId), eq(memberships.userId, next)));
     }
 
     await tx
@@ -134,21 +141,4 @@ export async function leaveConnect(
   });
 }
 
-/** 팀장이 나갈 때 고를 후보. */
-export async function getSuccessorCandidates(
-  connectId: string,
-  leaderId: string,
-): Promise<{ id: string; label: string }[]> {
-  const rows = await db
-    .select({ userId: memberships.userId, joinedAt: memberships.joinedAt })
-    .from(memberships)
-    .where(
-      and(
-        eq(memberships.connectId, connectId),
-        ne(memberships.userId, leaderId),
-        sql`${memberships.leftAt} IS NULL`,
-      ),
-    )
-    .orderBy(memberships.joinedAt);
-  return rows.map((r) => ({ id: r.userId, label: r.userId }));
-}
+

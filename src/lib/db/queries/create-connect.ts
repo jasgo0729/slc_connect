@@ -8,11 +8,14 @@ import type { Connect } from '../schema';
 const ACTIVE = ['recruiting', 'full_closed', 'early_closed', 'private', 'pending_review', 'confirmed'];
 
 /**
- * 이미 같은 트랙의 커넥트를 이끌고 있는지.
+ * 이미 같은 트랙의 커넥트에 속해 있는지.
  *
- * 한 사람이 같은 트랙의 팀을 여럿 이끌면 어느 쪽도 제대로 굴러가지
- * 않는다. 취미 하나, 도전 하나까지는 허용한다 — 성격이 아예 달라
- * 병행이 가능하다.
+ * 한 사람은 트랙당 하나에만 속한다 — 취미 하나, 도전 하나까지.
+ * 개설이든 참여든 같은 제한이다. 팀장 역할만 세면 이미 다른 팀에
+ * 참여 중인 사람이 같은 트랙의 팀을 또 만들 수 있게 된다.
+ *
+ * 두 트랙을 병행하는 것은 허용한다. 성격과 점수 계산이 아예 달라
+ * 서로 방해하지 않는다.
  */
 export async function hasConnectInTrack(userId: string, track: string): Promise<boolean> {
   const rows = await db
@@ -22,7 +25,6 @@ export async function hasConnectInTrack(userId: string, track: string): Promise<
     .where(
       and(
         eq(memberships.userId, userId),
-        eq(memberships.role, 'leader'),
         sql`${memberships.leftAt} IS NULL`,
         eq(connects.track, track),
         inArray(connects.status, ACTIVE),
