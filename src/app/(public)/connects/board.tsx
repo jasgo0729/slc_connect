@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ConnectCard } from '@/components/connect-card';
 import type { ConnectCardData } from '@/components/connect-card';
-import { BoardNotes } from '@/components/board-notes';
 import { EmptyState } from '@/components/empty-state';
 import { LoginPrompt } from '@/components/login-prompt';
 import {
@@ -232,8 +231,6 @@ export function Board({
               ))}
             </div>
           )}
-
-          <BoardNotes />
         </div>
       </div>
 
