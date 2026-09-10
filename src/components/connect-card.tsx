@@ -34,6 +34,19 @@ const CAMPUS_SHORT: Record<string, string> = {
   공통: '공통',
 };
 
+/**
+ * 캠퍼스를 테두리 색으로 구분한다.
+ *
+ * 배지를 읽지 않아도 어느 캠퍼스인지 훑어보며 알 수 있다.
+ * 같은 주제가 양 캠퍼스에 각각 열려 있어서, 목록에서 이 둘을
+ * 가려내는 일이 자주 생긴다.
+ */
+const CAMPUS_CLASS: Record<string, string> = {
+  인문사회: 'humanities',
+  자연과학: 'science',
+  공통: 'both',
+};
+
 export function ConnectCard({
   c,
   favorited = false,
@@ -46,7 +59,7 @@ export function ConnectCard({
   onBlocked?: () => void;
 }) {
   return (
-    <article className="ccard">
+    <article className={`ccard ccard--${CAMPUS_CLASS[c.campus] ?? "both"}`}>
       <h3 className="ccard-name">
         <Link href={`/connects/${c.id}`} className="ccard-link">
           {c.name}

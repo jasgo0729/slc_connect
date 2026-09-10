@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ConnectCard } from '@/components/connect-card';
 import type { ConnectCardData } from '@/components/connect-card';
+import { BoardNotes } from '@/components/board-notes';
 import { EmptyState } from '@/components/empty-state';
 import { LoginPrompt } from '@/components/login-prompt';
 import {
@@ -110,12 +111,14 @@ export function Board({
               </Link>
             )}
 
+            {/* 키워드 입력을 없앴으므로 문구도 바뀐다.
+                누르면 바로 골라 주는 것이 지금 동작이다. */}
             <Link href="/recommend" className="pick-card hero-card-hide-sm">
               <p className="pick-label" style={{ color: 'var(--blue)' }}>
                 추천
               </p>
-              <p className="pick-name">키워드로 찾기</p>
-              <p className="pick-meta">한 줄만 적으면 후보를 골라 드려요</p>
+              <p className="pick-name">나에게 맞는 커넥트</p>
+              <p className="pick-meta">누르면 바로 3개를 골라 드려요</p>
             </Link>
           </div>
         </div>
@@ -231,6 +234,8 @@ export function Board({
               ))}
             </div>
           )}
+
+          <BoardNotes />
         </div>
       </div>
 
