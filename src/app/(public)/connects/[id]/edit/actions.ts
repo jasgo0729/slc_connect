@@ -72,8 +72,10 @@ export async function submitEdit(
 
     if (!isGoalType(goalType)) errors.goalType = '목표 유형을 골라주세요.';
     if (!goalDetail) errors.goalDetail = '무엇을 만들지 구체적으로 적어주세요.';
-    if (!goalDate) errors.goalDate = '목표 시점을 정해주세요.';
-    else if (goalDate > GOAL_DEADLINE) errors.goalDate = '산출물 마감일(1월 31일) 이전으로 정해주세요.';
+    // 목표 시점은 폼에서 받지 않는다. 값이 들어오면 범위만 확인한다.
+    if (goalDate && goalDate > GOAL_DEADLINE) {
+      errors.goalDate = '산출물 마감일(1월 31일) 이전으로 정해주세요.';
+    }
   }
 
   if (Object.keys(errors).length > 0) return { errors };

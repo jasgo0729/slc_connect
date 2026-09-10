@@ -121,11 +121,9 @@ export async function submitCreate(
     if (!isGoalType(goalType)) errors.goalType = '목표 유형을 골라주세요.';
     if (!goalDetail) errors.goalDetail = '무엇을 만들지 구체적으로 적어주세요.';
 
-    if (!goalDate) {
-      errors.goalDate = '목표 시점을 정해주세요.';
-    } else if (goalDate > GOAL_DEADLINE) {
-      // 산출물 마감이 1월 말이다. 그 뒤를 목표로 잡은 팀은
-      // 시즌 안에 결과를 낼 수 없으므로 개설 시점에 걸러야 한다.
+    // 목표 시점은 폼에서 받지 않는다 — 바로 아래 '활동 기간'과
+    // 구분이 안 돼 혼란만 준다. 값이 들어오면 범위만 확인한다.
+    if (goalDate && goalDate > GOAL_DEADLINE) {
       errors.goalDate = '산출물 마감일(1월 31일) 이전으로 정해주세요.';
     }
   }

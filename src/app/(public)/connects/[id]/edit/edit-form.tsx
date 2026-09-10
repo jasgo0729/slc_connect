@@ -178,31 +178,17 @@ export function EditForm({
             <Err msg={e.goalDetail} />
           </div>
 
-          <div className="frow">
-            <div className="field">
-              <label className="field-label" htmlFor="e-goaldate">
-                목표 시점
-              </label>
-              <input
-                id="e-goaldate"
-                name="goalDate"
-                type="date"
-                className="input"
-                defaultValue={initial.goalDate}
-              />
-              <Err msg={e.goalDate} />
-            </div>
-            <div className="field">
-              <label className="field-label" htmlFor="e-period">
-                활동 기간 <em>선택</em>
-              </label>
-              <input
-                id="e-period"
-                name="activityPeriod"
-                className="input"
-                defaultValue={initial.activityPeriod}
-              />
-            </div>
+          <div className="field">
+            <label className="field-label" htmlFor="e-period">
+              활동 기간 <em>선택</em>
+            </label>
+            <input
+              id="e-period"
+              name="activityPeriod"
+              className="input"
+              defaultValue={initial.activityPeriod}
+              placeholder="예: 9월~1월"
+            />
           </div>
         </section>
       )}

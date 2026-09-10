@@ -29,8 +29,8 @@ export default async function NewConnectPage() {
 
         <h1 className="create-title">어떤 사람들과 만나고 싶나요</h1>
         <p className="create-lede">
-          {user.name}님이 팀장이 됩니다. 개설하면 바로 한 자리가 채워지고, 나머지 자리를 기다리게
-          돼요.
+          {user.name}님이 이 커넥트의 팀장이 돼요. 개설하면 바로 한 자리가 채워지고, 나머지 자리를
+          기다리게 됩니다.
         </p>
 
         <CreateForm />

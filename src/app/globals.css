@@ -166,19 +166,24 @@ main.page {
 
 .tab-fab { position: relative; }
 .tab-fab-btn {
-  position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+  /* 탭바 위로 살짝만 올린다. 너무 띄우면 버튼과 라벨이 떨어져
+     서로 다른 것처럼 보인다. */
+  position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
   width: 46px; height: 46px; display: grid; place-items: center;
   border-radius: 50%; background: var(--blue); color: var(--s25);
-  box-shadow: 0 6px 16px -4px rgba(49,82,234,.5);
+  box-shadow: 0 4px 12px -2px rgba(49,82,234,.45);
 }
-.tab-fab span { margin-top: 26px; }
+.tab-fab span { margin-top: 34px; }
 
 /* =========================================================
    히어로 밴드
    ========================================================= */
 
 .hero-band {
-  background: linear-gradient(180deg, var(--blue-wash) 0%, rgba(238,242,254,0) 100%);
+  /* 아래로 갈수록 옅어지는 대신 바닥까지 색을 유지한다.
+     그래야 카드가 올라앉는 면과 흰 본문이 확실히 나뉜다. */
+  background: linear-gradient(180deg, #dfe6fb 0%, #e8edfd 100%);
+  border-bottom: 1px solid rgba(49, 82, 234, 0.1);
   padding-block: 22px 26px;
 }
 .hero-heading { font-size: 22px; font-weight: 800; line-height: 1.32; color: var(--s800); }
@@ -221,7 +226,15 @@ main.page {
   transition: transform .18s, box-shadow .18s;
 }
 .pick-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
-.pick-label { font-size: 11px; font-weight: 800; color: var(--danger); }
+.pick-label {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--danger);
+  background: var(--danger-wash);
+}
 .pick-name { margin-top: 8px; font-size: 16px; font-weight: 700; }
 .pick-meta { margin-top: 4px; font-size: 12px; color: var(--muted); }
 
@@ -455,8 +468,16 @@ main.detail-page { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
    인증 화면
    ========================================================= */
 
-.auth { min-height: 100dvh; display: grid; grid-template-rows: 1fr auto; background: var(--s25); }
-.auth-inner { width: 100%; max-width: 380px; margin: 0 auto; padding: 0 24px; align-self: center; }
+.auth { min-height: 100dvh; display: grid; background: var(--s25); }
+.auth-inner {
+  width: 100%; max-width: 380px; margin: 0 auto; padding: 0 24px;
+  /* 위쪽에만 몰리지 않도록 세로 가운데에 모은다. */
+  align-self: center;
+}
+@media (max-width: 899px) {
+  .auth { place-items: center; }
+  .auth-inner { padding-bottom: 12dvh; }
+}
 .auth-side { display: none; }
 
 @media (min-width: 900px) {
@@ -699,20 +720,49 @@ select.input {
 .trackpick { display: grid; gap: 10px; margin-top: 16px; }
 @media (min-width: 620px) { .trackpick { grid-template-columns: 1fr 1fr; } }
 
+/* 두 트랙을 색으로 구분한다. 흰 상자 안에 흰 상자가 또 들어가면
+   전체가 하얗고 글만 많아 보인다. 취미는 블루, 도전은 핑크. */
 .trackopt {
   display: block; padding: 16px; cursor: pointer;
-  border: 1.5px solid var(--line-strong); border-radius: var(--r);
-  background: var(--card); transition: border-color .15s, background .15s;
+  border: 1.5px solid var(--line-strong); border-radius: var(--r-lg);
+  background: var(--card); transition: border-color .15s, background .15s, box-shadow .15s;
 }
 .trackopt:hover { border-color: var(--s300); }
-.trackopt[data-on='true'] { border-color: var(--blue); background: var(--blue-wash); }
+
+.trackopt--quantitative { background: #f2f6ff; border-color: #c8d8f8; }
+.trackopt--qualitative { background: #fdf3f6; border-color: #f2ccd9; }
+
+.trackopt--quantitative[data-on='true'] {
+  border-color: var(--blue); box-shadow: 0 0 0 3px rgba(49,82,234,.14);
+}
+.trackopt--qualitative[data-on='true'] {
+  border-color: #d1477a; box-shadow: 0 0 0 3px rgba(209,71,122,.14);
+}
+
+.trackopt-eyebrow {
+  display: block; font-size: 11px; font-weight: 700; letter-spacing: .02em;
+}
+.trackopt--quantitative .trackopt-eyebrow { color: var(--blue); }
+.trackopt--qualitative .trackopt-eyebrow { color: #c03c6d; }
 
 .trackopt-label {
-  display: inline-block; font-size: 15px; font-weight: 800; color: var(--s800);
+  display: block; margin-top: 3px; font-size: 19px; font-weight: 800; color: var(--s800);
 }
-.trackopt[data-on='true'] .trackopt-label { color: var(--blue); }
-.trackopt-summary { display: block; margin-top: 3px; font-size: 13px; font-weight: 600; color: var(--s600); }
-.trackopt-detail { display: block; margin-top: 8px; font-size: 12.5px; line-height: 1.55; color: var(--muted); }
+.trackopt-summary { display: block; margin-top: 8px; font-size: 13px; line-height: 1.6; color: var(--s600); }
+.trackopt-summary span { display: block; }
+
+.trackopt-facts { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 5px; }
+.trackopt-facts li { display: flex; gap: 8px; font-size: 12.5px; line-height: 1.5; }
+.trackopt-facts dt {
+  flex: none; width: 2.4rem; margin: 0; color: var(--muted); font-weight: 500;
+}
+.trackopt-facts dd { margin: 0; color: var(--s600); }
+
+.trackopt-eg {
+  display: block; margin-top: 10px; padding-top: 10px;
+  border-top: 1px dashed var(--line-strong);
+  font-size: 12px; line-height: 1.5; color: var(--muted);
+}
 
 /* 라디오를 태그 모양으로 */
 .tag[data-radio] { position: relative; }

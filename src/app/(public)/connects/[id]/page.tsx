@@ -99,14 +99,9 @@ export default async function ConnectDetailPage({ params }: Props) {
                 <p className="detail-desc" style={{ marginTop: 0 }}>
                   {c.goalDetail}
                 </p>
-                <p className="detail-meta">
-                  {[
-                    c.goalDate ? `${c.goalDate}까지` : null,
-                    c.activityPeriod ? `활동 기간 ${c.activityPeriod}` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </p>
+                {c.activityPeriod && (
+                  <p className="detail-meta">활동 기간 {c.activityPeriod}</p>
+                )}
               </section>
             )}
 

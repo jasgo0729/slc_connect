@@ -107,12 +107,16 @@ export function CreateForm() {
       <section className="fgroup">
         <h2 className="fgroup-title">어떤 커넥트인가요</h2>
         <p className="fgroup-hint">
-          고른 트랙에 따라 참여 방식과 점수 계산이 달라져요. 나중에 바꿀 수 없어요.
+          아래에서 고른 트랙은 나중에 바꿀 수 없어요.
         </p>
 
         <div className="trackpick">
           {TRACKS.map((t) => (
-            <label key={t.value} className="trackopt" data-on={track === t.value}>
+            <label
+              key={t.value}
+              className={`trackopt trackopt--${t.value}`}
+              data-on={track === t.value}
+            >
               <input
                 type="radio"
                 name="track"
@@ -121,9 +125,24 @@ export function CreateForm() {
                 onChange={() => setTrack(t.value)}
                 className="sr-only"
               />
+              <span className="trackopt-eyebrow">{t.eyebrow}</span>
               <span className="trackopt-label">{t.label}</span>
-              <span className="trackopt-summary">{t.summary}</span>
-              <span className="trackopt-detail">{t.detail}</span>
+              <span className="trackopt-summary">
+                {t.summary.map((line) => (
+                  <span key={line}>{line}</span>
+                ))}
+              </span>
+
+              <dl className="trackopt-facts">
+                {t.facts.map(([k, v]) => (
+                  <li key={k}>
+                    <dt>{k}</dt>
+                    <dd>{v}</dd>
+                  </li>
+                ))}
+              </dl>
+
+              <span className="trackopt-eg">예: {t.example}</span>
             </label>
           ))}
         </div>
@@ -202,7 +221,8 @@ export function CreateForm() {
         <section className="fgroup fgroup--accent">
           <h2 className="fgroup-title">무엇을 남길 건가요</h2>
           <p className="fgroup-hint">
-            도전 트랙은 1월에 결과물을 제출해요. 목표가 분명해야 확인이 빨리 끝나요.
+            도전 커넥트는 1월에 결과물을 제출해요. 이 커넥트에서 학기 동안 무엇을 이루고 싶은지
+            적어주세요.
           </p>
 
           <div className="field">
@@ -240,36 +260,18 @@ export function CreateForm() {
             <Err msg={e.goalDetail} />
           </div>
 
-          <div className="frow">
-            <div className="field">
-              <label className="field-label" htmlFor="c-goaldate">
-                목표 시점
-              </label>
-              <input
-                id="c-goaldate"
-                name="goalDate"
-                type="date"
-                className="input"
-                max={GOAL_DEADLINE}
-                value={goalDate}
-                onChange={(ev) => setGoalDate(ev.target.value)}
-              />
-              <Err msg={e.goalDate} />
-            </div>
-
-            <div className="field">
-              <label className="field-label" htmlFor="c-period">
-                활동 기간 <em>선택</em>
-              </label>
-              <input
-                id="c-period"
-                name="activityPeriod"
-                className="input"
-                placeholder="예: 9월~1월"
-                value={period}
-                onChange={(ev) => setPeriod(ev.target.value)}
-              />
-            </div>
+          <div className="field">
+            <label className="field-label" htmlFor="c-period">
+              활동 기간 <em>선택</em>
+            </label>
+            <input
+              id="c-period"
+              name="activityPeriod"
+              className="input"
+              placeholder="예: 9월~1월"
+              value={period}
+              onChange={(ev) => setPeriod(ev.target.value)}
+            />
           </div>
         </section>
       )}

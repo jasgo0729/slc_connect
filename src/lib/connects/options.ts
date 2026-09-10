@@ -16,14 +16,26 @@ export const TRACKS = [
   {
     value: 'quantitative',
     label: '취미',
-    summary: '자주 만나는 것이 목표',
-    detail: '주제는 가볍게, 대신 꾸준히 봅니다. 신청하면 바로 자리가 생기고 만난 만큼 점수가 쌓여요.',
+    eyebrow: '바로 모집',
+    summary: ['자주 만나는 것이 목표예요.', '신청하면 바로 자리가 생깁니다.'],
+    facts: [
+      ['목표', '가볍게 자주 만나기'],
+      ['참여', '신청하면 바로 합류돼요'],
+      ['점수', '만난 횟수만큼 쌓여요'],
+    ],
+    example: '보드게임 모임, 러닝 크루, 영화 감상 모임',
   },
   {
     value: 'qualitative',
     label: '도전',
-    summary: '학기 끝에 무언가 남기는 것이 목표',
-    detail: '팀마다 목표가 있어요. 팀장이 신청을 보고 승인하며, 1월에 결과물을 제출합니다.',
+    eyebrow: '팀장 승인',
+    summary: ['학기 끝에 결과물이 남는 모임이에요.', '팀장이 신청을 확인합니다.'],
+    facts: [
+      ['목표', '학기 안에 팀 결과물 남기기'],
+      ['참여', '팀장이 신청서를 보고 승인해요'],
+      ['점수', '1월 결과물 제출 기준으로 정해져요'],
+    ],
+    example: '공모전 준비팀, 자격증 스터디, 창업 아이디어팀',
   },
 ] as const;
 
@@ -33,14 +45,19 @@ export const CAMPUSES = [
   { value: '공통', label: '공통 (양 캠퍼스)' },
 ] as const;
 
-/** C-05 참여 조건. 자유 입력이 아니라 정의된 항목에서 고른다. */
+/**
+ * C-05 참여 조건.
+ *
+ * '이 팀에 들어오려면 무엇이 가능해야 하는가'만 남긴다.
+ * '초보자 환영'은 조건이 아니라 팀의 태도이고, '산출물 제작에 함께
+ * 참여'는 도전 트랙이면 당연한 것이라 조건으로 고를 이유가 없다.
+ * 둘 다 활동 소개에 적으면 된다.
+ */
 export const CONDITIONS = [
   { value: 'attendance', label: '정기 참석 가능' },
   { value: 'weekend', label: '주말 활동 가능' },
   { value: 'evening', label: '평일 저녁 활동 가능' },
   { value: 'online_ok', label: '방학 중 온라인 참여 가능' },
-  { value: 'deliverable', label: '산출물 제작에 함께 참여' },
-  { value: 'beginner_ok', label: '초보자 환영' },
   { value: 'commute', label: '캠퍼스 근처 거주·통학' },
 ] as const;
 
