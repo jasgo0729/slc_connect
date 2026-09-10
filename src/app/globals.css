@@ -1408,3 +1408,28 @@ a.admin-card:hover { border-color: var(--blue-soft); }
 .mbti-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
 .mbti-note { margin-top: 18px; font-size: 12.5px; color: var(--muted); }
 .mbti-note a { color: var(--blue); font-weight: 600; text-decoration: underline; }
+
+/* =========================================================
+   추천 (E-01)
+   ========================================================= */
+
+.reco { padding-top: 20px; }
+@media (min-width: 900px) { .reco { max-width: 720px; } }
+
+.reco-form {
+  margin-top: 20px; padding: 20px;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg);
+}
+.reco-input { margin-top: 8px; min-height: 88px; }
+
+.reco-examples { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.reco-examples .chip { cursor: pointer; }
+
+.reco-results { margin-top: 28px; }
+
+.reco-card { position: relative; }
+.reco-reason {
+  margin-top: 12px; padding: 10px 12px;
+  background: var(--blue-wash); border-radius: var(--r);
+  font-size: 12.5px; line-height: 1.6; color: var(--blue);
+}
