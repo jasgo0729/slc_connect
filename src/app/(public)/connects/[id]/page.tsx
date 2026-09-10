@@ -5,6 +5,7 @@ import { Badge, StatusBadge } from '@/components/ui/badge';
 import { MemberList } from '@/components/member-list';
 import { ResidenceDist } from '@/components/residence-dist';
 import { InviteButton } from '@/components/invite-button';
+import { PreCreatedNotice } from '@/components/pre-created-notice';
 import { DetailActions } from '@/components/detail-actions';
 import { LeaveButton } from '@/components/leave-button';
 import { IconArrowLeft, IconPin } from '@/components/ui/icon';
@@ -76,6 +77,9 @@ export default async function ConnectDetailPage({ params }: Props) {
               <StatusBadge status={c.status} />
               {!c.isPublic && <Badge tone="closed">비공개</Badge>}
             </div>
+
+            {/* 사전 개설은 성격이 달라 먼저 알린다. */}
+            {c.isPreCreated && <PreCreatedNotice />}
 
             <p className="detail-desc">{c.description || c.tagline}</p>
 

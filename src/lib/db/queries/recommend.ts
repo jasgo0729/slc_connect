@@ -16,6 +16,7 @@ export interface Candidate {
   tagline: string;
   description: string | null;
   track: string;
+  status: string;
   campus: string;
   capacity: number;
   memberCount: number;
@@ -54,6 +55,7 @@ export async function getCandidates(userId: string): Promise<Candidate[]> {
       tagline: connects.tagline,
       description: connects.description,
       track: connects.track,
+      status: connects.status,
       campus: connects.campus,
       capacity: connects.capacity,
       availableDays: connects.availableDays,

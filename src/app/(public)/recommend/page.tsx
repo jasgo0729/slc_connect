@@ -4,7 +4,7 @@ import { TabBar } from '@/components/tab-bar';
 import { getCurrentUser } from '@/lib/auth/session';
 import { countUnread } from '@/lib/db/queries/notifications';
 import { getMyConnectMbti } from '@/lib/db/queries/me';
-import { RecommendForm } from './recommend-form';
+import { RecommendFlow } from './recommend-flow';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,23 +23,13 @@ export default async function RecommendPage() {
     getMyConnectMbti(user.id),
   ]);
 
-  const hasProfile = Boolean(user.bio || user.interests || (user.preferredDays ?? []).length > 0);
+  // 재료가 하나도 없으면 결과가 뻔해진다. 들어올 때 한 번 물어본다.
+  const needsProfile = !mbtiCode && !user.bio && !user.residence && !user.interests;
 
   return (
     <>
       <AppBar current="/recommend" user={{ id: user.id, name: user.name }} />
-
-      <main className="page shell reco">
-        <h1 className="create-title">키워드로 커넥트 찾기</h1>
-        <p className="create-lede">
-          {mbtiCode
-            ? 'Connect-MBTI 결과와 프로필을 함께 보고 골라 드릴게요.'
-            : '프로필을 보고 골라 드릴게요. 무엇을 할지 정하지 않았어도 괜찮습니다.'}
-        </p>
-
-        <RecommendForm hasMbti={Boolean(mbtiCode)} hasProfile={hasProfile} />
-      </main>
-
+      <RecommendFlow needsProfile={needsProfile} />
       <TabBar current="/recommend" unread={unread} />
     </>
   );

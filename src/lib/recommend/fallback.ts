@@ -52,6 +52,34 @@ function score(c: Candidate, s: Seeker): number {
   return n;
 }
 
+/**
+ * 왜 골랐는지 한 가지만 짚는 짧은 라벨.
+ *
+ * 규칙으로 고른 티가 나지 않도록 여러 문구를 두되, 실제로 겹친
+ * 신호를 말한다. 아무 근거 없이 "잘 맞아요"라고 하면 다음부터
+ * 이 라벨을 아무도 읽지 않는다.
+ */
+function labelFor(c: Candidate, s: Seeker): string {
+  const haystack = `${c.name} ${c.tagline} ${c.description ?? ''} ${c.goalDetail ?? ''}`;
+  const words = [...s.keyword.split(/[\s,]+/), ...(s.interests ?? '').split(/[,\s]+/)]
+    .map((w) => w.trim())
+    .filter((w) => w.length >= 2);
+
+  if (words.some((w) => haystack.includes(w))) return '관심사와 잘 맞아요';
+
+  if (
+    s.preferredDays.length > 0 &&
+    c.availableDays.some((d) => s.preferredDays.includes(d))
+  ) {
+    return '활동 요일이 비슷해요';
+  }
+
+  if (c.campus === s.campus) return '같은 캠퍼스예요';
+  if (c.campus === '공통') return '양 캠퍼스 모두 참여해요';
+  if (c.memberCount <= 1) return '이제 막 시작한 팀이에요';
+  return '자리가 넉넉해요';
+}
+
 export function fallbackPicks(
   candidates: Candidate[],
   seeker: Seeker,
@@ -66,11 +94,5 @@ export function fallbackPicks(
     .map((c) => ({ c, s: score(c, seeker) }))
     .sort((a, b) => b.s - a.s)
     .slice(0, count)
-    .map(({ c }) => ({
-      connectId: c.id,
-      reason:
-        c.campus === seeker.campus || c.campus === '공통'
-          ? '같은 캠퍼스에서 활동해서 만나기 편해요.'
-          : '활동 소개가 구체적이라 무엇을 할지 그려볼 수 있어요.',
-    }));
+    .map(({ c }) => ({ connectId: c.id, reason: labelFor(c, seeker) }));
 }

@@ -45,7 +45,8 @@ function parsePicks(text: string, candidates: Candidate[], count: number): Pick[
     const reason = typeof p.reason === 'string' ? p.reason.trim() : '';
     picks.push({
       connectId: candidates[i]!.id,
-      reason: reason.slice(0, 120) || '관심사와 활동 내용이 잘 맞아요.',
+      // 라벨 자리라 길면 화면이 깨진다. 모델이 문장을 보내면 잘라 쓴다.
+      reason: reason.slice(0, 24) || '관심사와 잘 맞아요',
     });
     if (picks.length >= count) break;
   }

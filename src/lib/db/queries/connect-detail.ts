@@ -23,6 +23,8 @@ export interface ConnectDetail {
   capacity: number;
   status: string;
   isPublic: boolean;
+  /** TF가 미리 열어 둔 커넥트. 성격이 달라 안내가 필요하다. */
+  isPreCreated: boolean;
   inviteToken: string;
   availableDays: number[];
   conditions: string[];
@@ -103,6 +105,7 @@ export async function getConnectDetail(
     capacity: c.capacity,
     status: c.status,
     isPublic: c.isPublic,
+    isPreCreated: c.isPreCreated,
     inviteToken: c.inviteToken,
     availableDays: c.availableDays ?? [],
     conditions: c.conditions ?? [],

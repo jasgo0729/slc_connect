@@ -11,17 +11,19 @@ import {
 import { getMyConnectMbti } from '@/lib/db/queries/me';
 import { recommend } from '@/lib/recommend/client';
 import type { Seeker } from '@/lib/recommend/types';
-import { trackLabel } from '@/lib/connects/options';
+
 
 export interface RecommendedConnect {
   id: string;
   name: string;
   tagline: string;
-  trackLabel: string;
   campus: string;
   memberCount: number;
   capacity: number;
+  /** 카드 위에 붙는 짧은 라벨. */
   reason: string;
+  statusLabel: string;
+  statusTone: string;
 }
 
 export interface RecommendState {
@@ -30,6 +32,12 @@ export interface RecommendState {
   /** 규칙으로 골랐다는 표시. 화면에서 굳이 알리지는 않는다. */
   isFallback?: boolean;
 }
+
+/** 후보는 모집 중이거나 조기 마감뿐이다(getCandidates 참고). */
+const STATUS: Record<string, { label: string; tone: string }> = {
+  recruiting: { label: '모집 중', tone: 'open' },
+  early_closed: { label: '승인제 지원', tone: 'open' },
+};
 
 /**
  * E-01 추천 실행.
@@ -79,15 +87,17 @@ export async function runRecommend(keyword: string): Promise<RecommendState> {
     .map((p) => {
       const c = byId.get(p.connectId);
       if (!c) return null;
+      const status = STATUS[c.status] ?? STATUS.recruiting!;
       return {
         id: c.id,
         name: c.name,
         tagline: c.tagline,
-        trackLabel: trackLabel(c.track),
         campus: c.campus === '인문사회' ? '인사캠' : c.campus === '자연과학' ? '자과캠' : '공통',
         memberCount: c.memberCount,
         capacity: c.capacity,
         reason: p.reason,
+        statusLabel: status.label,
+        statusTone: status.tone,
       };
     })
     .filter((r): r is RecommendedConnect => r !== null);
