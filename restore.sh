@@ -15,7 +15,7 @@ FILE="${1:-}"
 [ -f "$FILE" ] || { echo "파일을 찾을 수 없습니다: $FILE" >&2; exit 1; }
 
 # shellcheck disable=SC1091
-set -a; . ./.env.production; set +a
+set -a; . ./.env; set +a
 PGUSER="${POSTGRES_USER:-connect}"
 PGDB="${POSTGRES_DB:-connect}"
 

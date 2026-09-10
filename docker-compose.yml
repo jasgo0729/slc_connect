@@ -1,15 +1,28 @@
 # =========================================================
-# 운영 — EC2 한 대에 전부 올린다.
+# EC2 한 대에 전부 올린다.
 #
-# 사용자 200~300명 규모라 쪼갤 이유가 없다. 대신 두 가지는
-# 반드시 지킨다 — 포트를 여는 것은 Caddy뿐이고, 사진과 백업은
-# 컨테이너 밖에 남긴다.
+# 사용자 200~300명 규모라 쪼갤 이유가 없다.
+#
+# 두 가지 방식으로 띄울 수 있다.
+#
+#   운영   docker compose --profile https up -d
+#          Caddy가 앞에 서서 HTTPS를 처리한다. 앱은 loopback에만
+#          열려 있어 밖에서 직접 닿을 수 없다.
+#
+#   테스트 docker compose up -d          (APP_BIND=0.0.0.0:80)
+#          Caddy 없이 앱이 80번을 직접 받는다. 도메인과 인증서가
+#          없어도 되지만 HTTP다 — 웹 푸시(H-01)와 홈 화면 추가(H-04)는
+#          동작하지 않는다.
+#
+# 어느 쪽이든 DB는 밖으로 열지 않는다.
 # =========================================================
 
 services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    # --profile https 를 줄 때만 뜬다.
+    profiles: ['https']
     ports:
       - '80:80'
       - '443:443'
@@ -33,12 +46,13 @@ services:
       context: .
       target: runner
     restart: unless-stopped
-    env_file: .env.production
+    env_file: .env
     environment:
       TZ: Asia/Seoul
-    # 포트를 밖으로 열지 않는다. Caddy를 통해서만 닿는다.
-    expose:
-      - '3000'
+    # 기본값은 loopback이다. Caddy를 통해서만 닿고 밖에서는 보이지 않는다.
+    # 테스트로 직접 열려면 .env 에 APP_BIND=0.0.0.0:80 을 넣는다.
+    ports:
+      - '${APP_BIND:-127.0.0.1:3000}:3000'
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -50,7 +64,7 @@ services:
       context: .
       target: migrator
     restart: 'no'
-    env_file: .env.production
+    env_file: .env
     depends_on:
       db:
         condition: service_healthy

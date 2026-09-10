@@ -22,6 +22,7 @@ export interface MyConnect {
   /** 신청 목록에서만 채워진다. */
   myApplication?: string;
   hasMessage?: boolean;
+  myRole?: 'leader' | 'member' | string | null;
 }
 
 const memberCount = sql<number>`(

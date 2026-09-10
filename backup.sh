@@ -19,7 +19,7 @@ QUIET=0
 [ "${1:-}" = "--quiet" ] && QUIET=1
 say() { [ "$QUIET" -eq 1 ] || echo "$@"; }
 
-ENV_FILE=".env.production"
+ENV_FILE=".env"
 [ -f "$ENV_FILE" ] || { echo "$ENV_FILE 이 없습니다." >&2; exit 1; }
 
 # shellcheck disable=SC1090

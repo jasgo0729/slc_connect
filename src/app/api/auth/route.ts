@@ -1,7 +1,7 @@
 import { generateState, generateCodeVerifier } from 'arctic';
 import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
-import { google, ALLOWED_DOMAIN } from '@/lib/auth/google';
+import { google } from '@/lib/auth/google';
  
 export async function GET(req: NextRequest) {
   const state = generateState();
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
  
   // hd 힌트. 강제력은 없고 계정 선택 화면을 좁혀 줄 뿐이므로
   // 서버 검증(assertStudentAccount)을 생략하면 안 된다.
-  url.searchParams.set('hd', ALLOWED_DOMAIN);
+  // url.searchParams.set('hd', ALLOWED_DOMAIN);
  
   const jar = await cookies();
   const secure = process.env.NODE_ENV === 'production';

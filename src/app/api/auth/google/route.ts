@@ -1,5 +1,6 @@
 import { generateCodeVerifier, generateState } from 'arctic';
 import { cookies } from 'next/headers';
+import { cookieOptions } from '@/lib/auth/cookies';
 import type { NextRequest } from 'next/server';
 import {
   NEXT_COOKIE,
@@ -23,13 +24,7 @@ export async function GET(req: NextRequest) {
   ]);
 
   const jar = await cookies();
-  const opts = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax' as const,
-    path: '/',
-    maxAge: 600,
-  };
+  const opts = cookieOptions(600);
 
   jar.set(STATE_COOKIE, state, opts);
   jar.set(VERIFIER_COOKIE, codeVerifier, opts);

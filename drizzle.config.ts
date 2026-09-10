@@ -6,11 +6,11 @@ import type { Config } from 'drizzle-kit';
 //
 // 컨테이너(migrate 서비스)에는 .env.local이 없지만, 파일이 없으면
 // dotenv가 조용히 넘어가고 compose의 env_file이 넣어 준 값이 그대로 쓰인다.
-config({ path: '.env.local', quiet: true });
+config({ path: '.env', quiet: true });
 
 export default {
-  schema: './lib/db/schema.ts',
-  out: './drizzle',
+  schema: './src/lib/db/schema.ts',
+  out: './src/drizzle',
   dialect: 'postgresql',
   dbCredentials: {
     url: process.env.DATABASE_URL!,

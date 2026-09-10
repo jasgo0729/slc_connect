@@ -13,7 +13,7 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm install
 
 # ── 빌드 ──────────────────────────────────────────────────
 FROM node:22-alpine AS builder
@@ -55,14 +55,20 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
 
 CMD ["node", "server.js"]
 
-# ── 마이그레이션 전용 ─────────────────────────────────────
-# drizzle-kit 과 스키마 파일이 필요하다. 앱을 띄우기 전에 한 번 돌고 끝난다.
+# ── 마이그레이션·운영 스크립트 전용 ───────────────────────
+# drizzle-kit, tsx, exceljs 가 필요하다. 실행 이미지(runner)에는
+# 개발 의존성이 없어 이런 일회성 작업을 돌릴 수 없다.
+#
+# 기본 동작은 마이그레이션이고, 명단 적재 같은 것은 커맨드를 덮어써서 쓴다.
+#   docker compose run --rm -v "$PWD/명단.xlsx:/data/roster.xlsx" \
+#     migrate npx tsx scripts/import-roster.ts /data/roster.xlsx
 FROM node:22-alpine AS migrator
 WORKDIR /app
 ENV TZ=Asia/Seoul
 RUN apk add --no-cache tzdata
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json drizzle.config.ts tsconfig.json ./
-COPY drizzle ./drizzle
-COPY lib ./lib
+COPY src/drizzle ./drizzle
+COPY src/lib ./lib
+COPY src/scripts ./scripts
 CMD ["npx", "drizzle-kit", "migrate"]

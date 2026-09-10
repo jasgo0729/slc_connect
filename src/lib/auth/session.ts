@@ -2,6 +2,7 @@ import 'server-only';
 import { createHash, randomBytes } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { and, eq, gt, lt } from 'drizzle-orm';
+import { cookieOptions } from './cookies';
 import { db } from '@/lib/db/client';
 import { roster, sessions, users } from '@/lib/db/schema';
 import type { User } from '@/lib/db/schema';
@@ -37,13 +38,7 @@ const TTL_MS = TTL_DAYS * 24 * 60 * 60 * 1000;
 
 const hash = (token: string) => createHash('sha256').update(token).digest('hex');
 
-const cookieOptions = () => ({
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
-  path: '/',
-  maxAge: TTL_DAYS * 24 * 60 * 60,
-});
+
 
 /** 로그인 성공 시 호출. 세션 행을 만들고 쿠키를 심는다. */
 export async function createSession(userId: string, userAgent?: string): Promise<void> {
@@ -58,7 +53,7 @@ export async function createSession(userId: string, userAgent?: string): Promise
   });
 
   const jar = await cookies();
-  jar.set(SESSION_COOKIE, token, cookieOptions());
+  jar.set(SESSION_COOKIE, token, cookieOptions(TTL_DAYS * 24 * 60 * 60));
 }
 
 /**

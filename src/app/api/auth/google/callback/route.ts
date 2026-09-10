@@ -1,5 +1,6 @@
 import { decodeIdToken } from 'arctic';
 import { cookies } from 'next/headers';
+import { appUrl, cookieOptions } from '@/lib/auth/cookies';
 import { eq } from 'drizzle-orm';
 import type { NextRequest } from 'next/server';
 import {
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
   // state 불일치는 CSRF 신호다. 조용히 로그인 화면으로 되돌린다.
   if (!code || !state || !verifier || state !== storedState) {
     clearTransient();
-    return Response.redirect(new URL('/login?error=invalid_request', req.url));
+    return Response.redirect(appUrl('/login?error=invalid_request'));
   }
 
   let claims: GoogleClaims;
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
   } catch {
     // 도메인 제한을 두지 않으므로 여기서 걸리는 것은 인증 실패뿐이다.
     clearTransient();
-    return Response.redirect(new URL('/login?error=oauth', req.url));
+    return Response.redirect(appUrl('/login?error=oauth'));
   }
 
   clearTransient();
@@ -58,15 +59,9 @@ export async function GET(req: NextRequest) {
     jar.set(
       PENDING_COOKIE,
       JSON.stringify({ sub: claims.sub, email: claims.email, hd: claims.hd ?? null }),
-      {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 900,
-      },
+      cookieOptions(900),
     );
-    const url = new URL('/onboarding', req.url);
+    const url = appUrl('/onboarding');
     url.searchParams.set('callbackUrl', next);
     return Response.redirect(url);
   }
@@ -79,5 +74,5 @@ export async function GET(req: NextRequest) {
 
   await createSession(user.id, req.headers.get('user-agent') ?? undefined);
 
-  return Response.redirect(new URL(next, req.url));
+  return Response.redirect(appUrl(next));
 }

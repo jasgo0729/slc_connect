@@ -27,8 +27,8 @@ A 레코드가 EC2 공인 IP를 가리켜야 합니다. DNS가 먼저 붙어야
 ```bash
 git clone <저장소> /srv/connect
 cd /srv/connect
-cp .env.production.example .env.production
-vi .env.production          # 도메인, DB 비밀번호, 구글 키
+cp .env.example .env
+vi .env          # 도메인, DB 비밀번호, 구글 키
 ```
 
 ### 4. 구글 OAuth
@@ -50,13 +50,26 @@ https://<도메인>/api/auth/google/callback
 
 ### 6. 명단 적재
 
+엑셀 파일을 서버에 올린 뒤,
+
 ```bash
-docker compose cp 명단.xlsx app:/tmp/roster.xlsx
-docker compose exec app node -e "…"    # 또는 로컬에서 DATABASE_URL 을 서버로 향하게 해 실행
+./roster.sh 명단.xlsx --dry-run    # 몇 명이 들어갈지 먼저 확인
+./roster.sh 명단.xlsx              # 실제 적재
 ```
 
-명단 적재는 `tsx`가 필요해 실행 이미지에 없습니다.
-로컬에서 서버 DB에 직접 붙어 넣는 편이 간단합니다(임시로 5432를 열고 작업 후 닫기).
+`--dry-run` 은 DB에 쓰지 않고 결과만 보여줍니다. 캠퍼스를 판별할 수 없는
+SLC 번호가 있으면 거기서 멈춥니다.
+
+명단이 갱신되면 다시 돌리면 됩니다. 같은 학번은 덮어쓰고, 명단에서 빠진
+사람은 지우지 않습니다 — 이미 가입한 계정이 물려 있기 때문입니다.
+
+파일을 서버로 올리는 방법:
+
+```bash
+scp -i 키.pem 명단.xlsx ubuntu@<서버>:~/slc_connect/
+```
+
+VS Code Remote SSH 를 쓰신다면 탐색기에 끌어다 놓으면 됩니다.
 
 ### 7. 관리자 지정
 
