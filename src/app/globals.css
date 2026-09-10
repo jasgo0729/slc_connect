@@ -1305,7 +1305,7 @@ a.admin-card:hover { border-color: var(--blue-soft); }
   min-height: calc(100dvh - 56px);
   display: grid;
   place-items: center;
-  padding: 32px var(--gutter) calc(var(--nav-h) + env(safe-area-inset-bottom) + 40px);
+  padding: 28px var(--gutter) calc(var(--nav-h) + env(safe-area-inset-bottom) + 56px);
 }
 @media (min-width: 900px) {
   .mbti-intro,
@@ -1366,8 +1366,13 @@ a.admin-card:hover { border-color: var(--blue-soft); }
 
 .mbti-result {
   min-height: calc(100dvh - 56px);
-  padding: 28px var(--gutter) 48px;
+  /* 작은 화면에서 마지막 버튼이 잘리지 않도록 넉넉히 둔다.
+     iOS Safari 의 하단 바까지 감안한 값이다. */
+  padding: 24px var(--gutter) calc(96px + env(safe-area-inset-bottom));
   background: var(--page);
+}
+@media (min-width: 900px) {
+  .mbti-result { padding-bottom: 80px; }
 }
 .mbti-result-inner { width: 100%; max-width: 420px; margin: 0 auto; text-align: center; }
 
@@ -1415,7 +1420,8 @@ a.admin-card:hover { border-color: var(--blue-soft); }
 .mbti-cta:hover { filter: brightness(.96); }
 
 .mbti-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-.mbti-note { margin-top: 18px; font-size: 12.5px; color: var(--muted); }
+.mbti-copy { display: block; width: 100%; margin-top: 6px; font-size: 13px; }
+.mbti-note { margin-top: 14px; font-size: 12.5px; color: var(--muted); }
 .mbti-note a { color: var(--blue); font-weight: 600; text-decoration: underline; }
 
 /* =========================================================

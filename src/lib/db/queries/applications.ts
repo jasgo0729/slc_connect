@@ -409,3 +409,30 @@ export async function getMyLiveApplication(
     .limit(1);
   return rows[0] ?? null;
 }
+
+/* ── 알림 대상 조회 ────────────────────────────────────── */
+
+/** 커넥트 이름만. 알림 문구에 쓴다. */
+export async function getConnectBrief(
+  connectId: string,
+): Promise<{ name: string } | null> {
+  const rows = await db
+    .select({ name: connects.name })
+    .from(connects)
+    .where(eq(connects.id, connectId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/** 처리한 신청의 주인. 승인·거절 결과를 알릴 대상이다. */
+export async function getApplicationTarget(
+  applicationId: string,
+): Promise<{ userId: string; connectName: string } | null> {
+  const rows = await db
+    .select({ userId: applications.userId, connectName: connects.name })
+    .from(applications)
+    .innerJoin(connects, eq(applications.connectId, connects.id))
+    .where(eq(applications.id, applicationId))
+    .limit(1);
+  return rows[0] ?? null;
+}

@@ -13,7 +13,12 @@ import {
 } from '@/lib/db/queries/applications';
 import { toggleFavorite } from '@/lib/db/queries/favorites';
 import { LEAVE_MESSAGES, leaveConnect } from '@/lib/db/queries/leave';
-import { isRejectReason } from '@/lib/connects/reject-reasons';
+import { isRejectReason, rejectLabel } from '@/lib/connects/reject-reasons';
+import {
+  notifyApplicationDecided,
+  notifyApplicationReceived,
+} from '@/lib/notify/send';
+import { getApplicationTarget, getConnectBrief } from '@/lib/db/queries/applications';
 
 /**
  * 상세·관리 화면의 행동들.
@@ -51,6 +56,12 @@ export async function applyAction(
       };
     }
     return { error: APPLY_MESSAGES[result.reason] };
+  }
+
+  // 팀장에게 알린다. 취미는 바로 합류라 문구가 다르다.
+  const brief = await getConnectBrief(connectId);
+  if (brief) {
+    await notifyApplicationReceived(connectId, brief.name, user.name, result.joined);
   }
 
   revalidatePath(`/connects/${connectId}`);
@@ -94,6 +105,9 @@ export async function approveAction(
     };
   }
 
+  const t = await getApplicationTarget(applicationId);
+  if (t) await notifyApplicationDecided(t.userId, connectId, t.connectName, true);
+
   revalidatePath(`/connects/${connectId}/manage`);
   revalidatePath(`/connects/${connectId}`);
   return {};
@@ -112,6 +126,11 @@ export async function rejectAction(
   const r = await rejectApplication(user.id, applicationId, safe);
   if (!r.ok) {
     return { error: r.reason === 'NOT_LEADER' ? '팀장만 거절할 수 있어요.' : '이미 처리된 신청이에요.' };
+  }
+
+  const t = await getApplicationTarget(applicationId);
+  if (t) {
+    await notifyApplicationDecided(t.userId, connectId, t.connectName, false, rejectLabel(safe));
   }
 
   revalidatePath(`/connects/${connectId}/manage`);

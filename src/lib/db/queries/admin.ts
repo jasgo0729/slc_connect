@@ -162,3 +162,15 @@ export async function getAdminCounts(): Promise<{ pendingConnects: number; conne
     members: mem?.n ?? 0,
   };
 }
+
+/** 알림 대상을 찾기 위한 조회. 개설자와 커넥트 이름. */
+export async function getConnectOwner(
+  connectId: string,
+): Promise<{ userId: string; name: string } | null> {
+  const rows = await db
+    .select({ userId: connects.createdBy, name: connects.name })
+    .from(connects)
+    .where(eq(connects.id, connectId))
+    .limit(1);
+  return rows[0] ?? null;
+}
