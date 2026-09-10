@@ -9,6 +9,7 @@ import {
   CAPACITY_MIN,
   CONDITIONS,
   DAYS,
+  GOAL_DEADLINE,
   GOAL_TYPES,
   TAGLINE_MAX,
   TRACKS,
@@ -42,12 +43,23 @@ function Submit({ track }: { track: string }) {
 
 export function CreateForm() {
   const [state, action] = useActionState(submitCreate, initial);
+
+  // React 19는 폼 액션이 끝나면 제어되지 않는 입력을 자동으로 비운다.
+  // 검증에 걸렸을 때 적어 둔 내용이 사라지지 않도록 전부 state로 든다.
   const [track, setTrack] = useState<string>('');
   const [capacity, setCapacity] = useState(CAPACITY_DEFAULT);
   const [days, setDays] = useState<number[]>([]);
   const [conds, setConds] = useState<string[]>([]);
+  const [name, setName] = useState('');
   const [tagline, setTagline] = useState('');
   const [desc, setDesc] = useState('');
+  const [location, setLocation] = useState('');
+  const [contact, setContact] = useState('');
+  const [campus, setCampus] = useState('');
+  const [goalType, setGoalType] = useState('');
+  const [goalDetail, setGoalDetail] = useState('');
+  const [goalDate, setGoalDate] = useState('');
+  const [period, setPeriod] = useState('');
   const [isPublic, setIsPublic] = useState(true);
 
   const e = state.errors ?? {};
@@ -99,6 +111,8 @@ export function CreateForm() {
             className="input"
             placeholder="예: 환경 독서 모임"
             maxLength={30}
+            value={name}
+            onChange={(ev) => setName(ev.target.value)}
             required
           />
           <Err msg={e.name} />
@@ -150,12 +164,12 @@ export function CreateForm() {
         </div>
       </section>
 
-      {/* ── 정성 트랙 전용 ── */}
+      {/* ── 도전 트랙 전용 ── */}
       {track === 'qualitative' && (
         <section className="fgroup fgroup--accent">
           <h2 className="fgroup-title">무엇을 남길 건가요</h2>
           <p className="fgroup-hint">
-            정성 트랙은 1월에 결과물을 제출해요. 목표가 분명해야 확인이 빨리 끝나요.
+            도전 트랙은 1월에 결과물을 제출해요. 목표가 분명해야 확인이 빨리 끝나요.
           </p>
 
           <div className="field">
@@ -163,7 +177,14 @@ export function CreateForm() {
             <div className="tagset">
               {GOAL_TYPES.map((g) => (
                 <label key={g.value} className="tag" data-radio>
-                  <input type="radio" name="goalType" value={g.value} className="sr-only" />
+                  <input
+                    type="radio"
+                    name="goalType"
+                    value={g.value}
+                    checked={goalType === g.value}
+                    onChange={() => setGoalType(g.value)}
+                    className="sr-only"
+                  />
                   <span>{g.label}</span>
                 </label>
               ))}
@@ -180,6 +201,8 @@ export function CreateForm() {
               name="goalDetail"
               className="input"
               placeholder="예: 교내 갤러리에서 4인 단체 사진전 열기"
+              value={goalDetail}
+              onChange={(ev) => setGoalDetail(ev.target.value)}
             />
             <Err msg={e.goalDetail} />
           </div>
@@ -189,7 +212,15 @@ export function CreateForm() {
               <label className="field-label" htmlFor="c-goaldate">
                 목표 시점
               </label>
-              <input id="c-goaldate" name="goalDate" type="date" className="input" />
+              <input
+                id="c-goaldate"
+                name="goalDate"
+                type="date"
+                className="input"
+                max={GOAL_DEADLINE}
+                value={goalDate}
+                onChange={(ev) => setGoalDate(ev.target.value)}
+              />
               <Err msg={e.goalDate} />
             </div>
 
@@ -202,6 +233,8 @@ export function CreateForm() {
                 name="activityPeriod"
                 className="input"
                 placeholder="예: 9월~1월"
+                value={period}
+                onChange={(ev) => setPeriod(ev.target.value)}
               />
             </div>
           </div>
@@ -217,7 +250,14 @@ export function CreateForm() {
           <div className="tagset">
             {CAMPUSES.map((c) => (
               <label key={c.value} className="tag" data-radio>
-                <input type="radio" name="campus" value={c.value} className="sr-only" />
+                <input
+                  type="radio"
+                  name="campus"
+                  value={c.value}
+                  checked={campus === c.value}
+                  onChange={() => setCampus(c.value)}
+                  className="sr-only"
+                />
                 <span>{c.label}</span>
               </label>
             ))}
@@ -258,6 +298,8 @@ export function CreateForm() {
             name="location"
             className="input"
             placeholder="예: 인문사회과학캠퍼스 중앙학술정보관"
+            value={location}
+            onChange={(ev) => setLocation(ev.target.value)}
           />
         </div>
       </section>
@@ -328,6 +370,8 @@ export function CreateForm() {
             name="contact"
             className="input"
             placeholder="오픈채팅 링크, 인스타 아이디 등"
+            value={contact}
+            onChange={(ev) => setContact(ev.target.value)}
           />
         </div>
       </section>
@@ -366,7 +410,7 @@ export function CreateForm() {
       <div className="createform-foot">
         {track === 'qualitative' && (
           <p className="field-hint" style={{ marginBottom: 10 }}>
-            정성 트랙은 운영진 확인을 거친 뒤 씨앗판에 올라가요.
+            도전 트랙은 운영진 확인을 거친 뒤 신청을 받을 수 있어요.
           </p>
         )}
         <Submit track={track} />

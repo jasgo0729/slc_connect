@@ -1,7 +1,36 @@
 import { randomBytes } from 'node:crypto';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '../client';
 import { connects, memberships } from '../schema';
 import type { Connect } from '../schema';
+
+/** 개설을 막는 상태. 지워지거나 반려된 커넥트는 세지 않는다. */
+const ACTIVE = ['recruiting', 'full_closed', 'early_closed', 'private', 'pending_review', 'confirmed'];
+
+/**
+ * 이미 같은 트랙의 커넥트를 이끌고 있는지.
+ *
+ * 한 사람이 같은 트랙의 팀을 여럿 이끌면 어느 쪽도 제대로 굴러가지
+ * 않는다. 취미 하나, 도전 하나까지는 허용한다 — 성격이 아예 달라
+ * 병행이 가능하다.
+ */
+export async function hasConnectInTrack(userId: string, track: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: connects.id })
+    .from(memberships)
+    .innerJoin(connects, eq(memberships.connectId, connects.id))
+    .where(
+      and(
+        eq(memberships.userId, userId),
+        eq(memberships.role, 'leader'),
+        sql`${memberships.leftAt} IS NULL`,
+        eq(connects.track, track),
+        inArray(connects.status, ACTIVE),
+      ),
+    )
+    .limit(1);
+  return rows.length > 0;
+}
 
 /**
  * C-01~C-10 커넥트 개설.

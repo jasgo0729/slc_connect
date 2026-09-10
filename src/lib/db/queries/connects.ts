@@ -25,8 +25,16 @@ export interface ListFilters {
   sort?: string;
 }
 
-/** 목록에 오르는 상태. 비공개와 정성 확인 대기는 제외한다(C-11, C-08). */
-const LISTED = ['recruiting', 'full_closed', 'early_closed', 'confirmed'];
+/**
+ * 목록에 오르는 상태.
+ *
+ * 확인 대기(pending_review)도 보여준다. 감추면 개설자가 자기 커넥트를
+ * 찾지 못하고, 곧 열릴 팀을 다른 사람이 미리 볼 수도 없다.
+ * 신청은 상세 화면에서 막는다.
+ *
+ * 비공개(C-11)와 반려는 계속 제외한다.
+ */
+const LISTED = ['recruiting', 'full_closed', 'early_closed', 'pending_review', 'confirmed'];
 
 const memberCount = sql<number>`(
   SELECT COUNT(*)::int FROM memberships m

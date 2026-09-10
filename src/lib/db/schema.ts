@@ -76,6 +76,9 @@ export const users = pgTable(
     // A-05 프로필 선택 항목. 전부 NULL 허용 = 빈 프로필이 정상 상태.
     major: text('major'),
     availableTimes: text('available_times'),
+    // A-05 관심사. 목록에서 고르게 하면 거기 없는 것은 적을 수 없어
+    // 자유 입력으로 받는다. 추천(E-02)이 이 문장을 그대로 읽는다.
+    interests: text('interests'),
     // A-05 활동 선호 요일. 0=일 … 6=토.
     // 폼에서 받아 놓고 저장할 곳이 없어 조용히 사라지고 있었다.
     preferredDays: smallint('preferred_days').array(),

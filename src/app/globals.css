@@ -1197,3 +1197,12 @@ a.admin-card:hover { border-color: var(--blue-soft); }
 .confirm-row { display: grid; gap: 12px; }
 .season-save { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 12px; }
 .season-save .notice { margin: 0; flex: 1; }
+
+/* ── 이탈 ─────────────────────────────────────────────── */
+
+.leave-section { border-top: 1px solid var(--line); }
+.leave-link { padding-inline: 0; font-size: 13px; color: var(--s300); }
+.leave-link:hover { color: var(--danger); }
+
+/* 개설 목록의 상태 배지 줄 */
+.led-meta { display: inline-flex; align-items: center; gap: 8px; }

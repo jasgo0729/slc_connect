@@ -45,8 +45,6 @@ export function Board({
   // 서버를 다시 부르지 않으므로 조건을 바꿀 때 화면이 깜빡이지 않는다.
   const shown = items
     .filter((c) => {
-      // 상단에 이미 크게 띄운 커넥트를 바로 아래 목록에 또 두지 않는다.
-      if (featured && c.id === featured.id) return false;
       if (track && c.track !== track) return false;
       if (filters.status && c.status !== filters.status) return false;
       // '공통' 커넥트는 양 캠퍼스 필터 모두에 나와야 한다.

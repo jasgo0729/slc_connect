@@ -83,13 +83,20 @@ export function DetailActions({
           )}
         </div>
         <div className="actionbar-row">
+          <Link
+            href={`/connects/${connectId}/edit`}
+            className="btn btn--line"
+            style={{ flex: 1 }}
+          >
+            수정
+          </Link>
           {status === 'rejected' ? (
-            <Link href={`/connects/${connectId}/edit`} className="btn" style={{ flex: 1 }}>
-              수정하러 가기
+            <Link href={`/connects/${connectId}/edit`} className="btn" style={{ flex: 1.4 }}>
+              고쳐서 다시 신청
             </Link>
           ) : (
-            <Link href={`/connects/${connectId}/manage`} className="btn" style={{ flex: 1 }}>
-              팀 관리하기
+            <Link href={`/connects/${connectId}/manage`} className="btn" style={{ flex: 1.4 }}>
+              팀 관리
             </Link>
           )}
         </div>

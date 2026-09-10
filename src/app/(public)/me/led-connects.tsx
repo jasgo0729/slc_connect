@@ -70,6 +70,7 @@ export function LedConnects({
                   {c.name}
                 </Link>
                 <span className="led-meta">
+                  <span className="badge badge--open">참여 중 · 팀장</span>
                   {c.memberCount}/{c.capacity}명 · {trackLabel(c.track)}
                 </span>
               </header>
@@ -146,8 +147,17 @@ export function LedConnects({
                 </div>
               )}
 
-              {canToggle && (
-                <div className="led-foot">
+              <div className="led-foot">
+                {!canToggle && (
+                  <Link href={`/connects/${c.id}/edit`} className="btn btn--line btn--sm">
+                    수정
+                  </Link>
+                )}
+                {canToggle && (
+                  <>
+                  <Link href={`/connects/${c.id}/edit`} className="btn btn--line btn--sm">
+                    수정
+                  </Link>
                   <button
                     type="button"
                     className="btn btn--ghost btn--sm"
@@ -156,11 +166,10 @@ export function LedConnects({
                   >
                     {busy === c.id ? '변경 중…' : closed ? '다시 모집하기' : '마감하기'}
                   </button>
-                  {closed && (
-                    <Badge tone="review">마감 상태 · 신청은 계속 받아요</Badge>
-                  )}
-                </div>
-              )}
+                    {closed && <Badge tone="review">마감 상태 · 신청은 계속 받아요</Badge>}
+                  </>
+                )}
+              </div>
             </article>
           );
         })}

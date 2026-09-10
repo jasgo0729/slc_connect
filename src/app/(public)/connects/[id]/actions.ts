@@ -12,6 +12,7 @@ import {
   setEarlyClosed,
 } from '@/lib/db/queries/applications';
 import { toggleFavorite } from '@/lib/db/queries/favorites';
+import { LEAVE_MESSAGES, leaveConnect } from '@/lib/db/queries/leave';
 import { isRejectReason } from '@/lib/connects/reject-reasons';
 
 /**
@@ -121,4 +122,28 @@ export async function earlyCloseAction(
   revalidatePath(`/connects/${connectId}`);
   revalidatePath('/connects');
   return {};
+}
+
+
+/**
+ * G-15 이탈 · 커넥트 삭제.
+ *
+ * 팀장은 후임을 지정해야 나갈 수 있고, 혼자뿐이면 커넥트가 지워진다.
+ * 확정 후에는 4명 미만이 되는 이탈을 막는다.
+ */
+export async function leaveAction(
+  connectId: string,
+  successorId?: string,
+): Promise<{ error?: string; deleted?: boolean }> {
+  const user = await getCurrentUser();
+  if (!user) redirect('/login');
+
+  const r = await leaveConnect(user.id, connectId, successorId);
+  if (!r.ok) return { error: LEAVE_MESSAGES[r.reason] };
+
+  revalidatePath('/me');
+  revalidatePath('/connects');
+  if (r.deleted) redirect('/connects');
+  revalidatePath(`/connects/${connectId}`);
+  return { deleted: false };
 }

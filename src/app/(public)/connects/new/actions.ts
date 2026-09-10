@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
-import { createConnect } from '@/lib/db/queries/create-connect';
+import { createConnect, hasConnectInTrack } from '@/lib/db/queries/create-connect';
 import {
   CAPACITY_MAX,
   CAPACITY_MIN,
@@ -93,8 +93,13 @@ export async function submitCreate(
     } else if (goalDate > GOAL_DEADLINE) {
       // 정성 최종 산출물 마감이 1월 중순이다. 그 뒤를 목표로 잡은 팀은
       // 시즌 안에 결과를 낼 수 없으므로 개설 시점에 걸러야 한다.
-      errors.goalDate = '정성 산출물 마감일 이전으로 정해주세요.';
+      errors.goalDate = '산출물 마감일(1월 31일) 이전으로 정해주세요.';
     }
+  }
+
+  // 한 사람이 같은 트랙의 팀을 여럿 이끌면 어느 쪽도 굴러가지 않는다.
+  if (!errors.track && (await hasConnectInTrack(user.id, track))) {
+    errors.track = `이미 ${track === 'qualitative' ? '도전' : '취미'} 커넥트를 이끌고 있어요. 트랙당 하나만 만들 수 있어요.`;
   }
 
   if (Object.keys(errors).length > 0) return { errors };

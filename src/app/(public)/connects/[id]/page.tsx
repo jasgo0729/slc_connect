@@ -6,6 +6,7 @@ import { MemberList } from '@/components/member-list';
 import { ResidenceDist } from '@/components/residence-dist';
 import { InviteButton } from '@/components/invite-button';
 import { DetailActions } from '@/components/detail-actions';
+import { LeaveButton } from '@/components/leave-button';
 import { IconArrowLeft, IconPin } from '@/components/ui/icon';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getConnectDetail, summarizeResidence } from '@/lib/db/queries/connect-detail';
@@ -135,6 +136,19 @@ export default async function ConnectDetailPage({ params }: Props) {
               <section className="section">
                 <h2 className="section-title">방학 중 거주지 분포</h2>
                 <ResidenceDist data={residence} />
+              </section>
+            )}
+
+            {/* G-15 이탈. 참여 중인 사람에게만 보인다. */}
+            {c.viewer.isMember && (
+              <section className="section leave-section">
+                <LeaveButton
+                  connectId={c.id}
+                  isLeader={c.viewer.isLeader}
+                  candidates={c.members
+                    .filter((m) => m.id !== user.id)
+                    .map((m) => ({ id: m.id, label: m.label }))}
+                />
               </section>
             )}
 

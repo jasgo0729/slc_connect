@@ -1,11 +1,12 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { eq, inArray } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth/session';
 import { db } from '@/lib/db/client';
-import { tags, userTags, users } from '@/lib/db/schema';
+import { users } from '@/lib/db/schema';
 import { DAYS } from '@/lib/connects/options';
+import { isRegion } from '@/lib/connects/regions';
 
 /**
  * A-05·A-06 프로필 저장.
@@ -14,7 +15,7 @@ import { DAYS } from '@/lib/connects/options';
  * "입력하지 않음"과 "빈칸을 넣음"을 같게 만든다 — 그래야 조회하는
  * 쪽에서 한 가지 경우만 다루면 된다.
  *
- * 관심 태그와 선호 요일까지 저장한다. 폼에서 받아 놓고 버리면
+ * 관심사와 선호 요일까지 저장한다. 폼에서 받아 놓고 버리면
  * 사용자는 저장했다고 믿는데 다음에 열면 비어 있다.
  */
 export async function updateProfile(fd: FormData): Promise<void> {
@@ -33,36 +34,18 @@ export async function updateProfile(fd: FormData): Promise<void> {
     .filter((i) => i >= 0)
     .sort();
 
-  const tagNames = [...new Set(fd.getAll('tags').map(String).filter(Boolean))].slice(0, 20);
-
-  await db.transaction(async (tx) => {
-    await tx
-      .update(users)
-      .set({
-        bio: s('bio'),
-        residence: s('residence'),
-        mbtiType: s('mbtiType'),
-        preferredDays,
-      })
-      .where(eq(users.id, user.id));
-
-    // 태그는 목록 전체를 갈아 끼운다. 무엇이 빠졌는지 계산할 필요가 없다.
-    await tx.delete(userTags).where(eq(userTags.userId, user.id));
-    if (tagNames.length === 0) return;
-
-    // 없는 태그는 만들어 둔다. 관리자가 미리 등록해 두지 않아도
-    // 사용자가 고른 값이 사라지지 않는다.
-    await tx
-      .insert(tags)
-      .values(tagNames.map((name) => ({ name })))
-      .onConflictDoNothing();
-
-    const rows = await tx.select({ id: tags.id }).from(tags).where(inArray(tags.name, tagNames));
-    await tx
-      .insert(userTags)
-      .values(rows.map((r) => ({ userId: user.id, tagId: r.id })))
-      .onConflictDoNothing();
-  });
+  await db
+    .update(users)
+    .set({
+      bio: s('bio'),
+      // 목록에 없는 값이 들어오면 저장하지 않는다. 거주지 분포가
+      // 시·도 단위로 묶이는 전제라 임의 문자열이 섞이면 어긋난다.
+      residence: isRegion(String(fd.get('residence') ?? '')) ? s('residence') : null,
+      mbtiType: s('mbtiType'),
+      interests: s('interests'),
+      preferredDays,
+    })
+    .where(eq(users.id, user.id));
 
   revalidatePath('/me');
 }

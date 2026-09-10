@@ -11,7 +11,6 @@ import {
   getLedConnects,
   getMyConnectMbti,
   getMyFavorites,
-  getMyTags,
 } from '@/lib/db/queries/me';
 import type { MyConnect } from '@/lib/db/queries/me';
 import { findConnectMbti } from '@/lib/connects/mbti';
@@ -93,12 +92,11 @@ export default async function MyPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login?callbackUrl=%2Fme');
 
-  const [favorites, applied, led, mbtiCode, myTags] = await Promise.all([
+  const [favorites, applied, led, mbtiCode] = await Promise.all([
     getMyFavorites(user.id),
     getAppliedConnects(user.id),
     getLedConnects(user.id),
     getMyConnectMbti(user.id),
-    getMyTags(user.id),
   ]);
 
   const applicants = await getApplicantsForLed(led.map((c) => c.id));
@@ -137,7 +135,7 @@ export default async function MyPage() {
               bio: user.bio,
               residence: user.residence,
               mbtiType: user.mbtiType,
-              tags: myTags,
+              interests: user.interests,
               days: (user.preferredDays ?? []).map((d) => DAYS[d]).filter(Boolean) as string[],
             }}
           />
@@ -147,6 +145,7 @@ export default async function MyPage() {
           <Row label="한 줄 소개" value={user.bio ?? EMPTY} />
           <Row label="방학 중 거주지" value={user.residence ?? EMPTY} />
           <Row label="MBTI" value={user.mbtiType ?? EMPTY} />
+          <Row label="관심 있는 것" value={user.interests ?? EMPTY} />
 
           <div className="kv kv--stack">
             <span className="kv-key">Connect-MBTI</span>
@@ -177,12 +176,10 @@ export default async function MyPage() {
           </div>
         </section>
 
-        <h2 className="me-sectitle me-sectitle--gap">내가 찜한 Connect</h2>
-        <TrackGroups
-          items={favorites}
-          variant="favorite"
-          empty="마음에 드는 커넥트를 찜해두면 여기 모여요."
-        />
+        {/* 내가 팀장인 커넥트를 맨 위에 둔다. 개설한 사람은 참여도
+            하고 있으므로 '참여 중' 목록에서 찾다가 없다고 느낀다. */}
+        <h2 className="me-sectitle me-sectitle--gap">내가 개설한 Connect</h2>
+        <LedConnects connects={led} applicants={applicants} />
 
         <h2 className="me-sectitle me-sectitle--gap">내가 신청한 Connect</h2>
         <TrackGroups
@@ -191,8 +188,12 @@ export default async function MyPage() {
           empty="아직 신청한 커넥트가 없어요."
         />
 
-        <h2 className="me-sectitle me-sectitle--gap">내가 개설한 Connect</h2>
-        <LedConnects connects={led} applicants={applicants} />
+        <h2 className="me-sectitle me-sectitle--gap">내가 찜한 Connect</h2>
+        <TrackGroups
+          items={favorites}
+          variant="favorite"
+          empty="마음에 드는 커넥트를 찜해두면 여기 모여요."
+        />
       </main>
 
       <TabBar current="/me" unread={unread} />

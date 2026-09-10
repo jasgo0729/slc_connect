@@ -63,13 +63,13 @@ export const CAPACITY_DEFAULT = 6; // U-04
 export const TAGLINE_MAX = 40;
 
 /**
- * 정성 목표 시점의 상한.
+ * 도전 목표 시점의 상한.
  *
- * 정성 최종 산출물 마감이 1월 중순이므로, 목표 시점이 그 뒤인 팀은
- * 개설 시점에 걸러야 한다(C-02 보충). 시즌 일정이 바뀔 수 있으므로
+ * 산출물 마감이 1월 말이므로 그 뒤를 목표로 잡은 팀은 시즌 안에
+ * 결과를 낼 수 없다(C-02 보충). 시즌 일정이 바뀔 수 있으므로
  * 최종적으로는 season_config에서 읽어야 하는 값이다.
  */
-export const GOAL_DEADLINE = '2027-01-15';
+export const GOAL_DEADLINE = '2027-01-31';
 
 /** 화면에 쓰는 트랙 이름. 한 곳에서만 바꾸면 되도록 여기 둔다. */
 export function trackLabel(track: string): string {

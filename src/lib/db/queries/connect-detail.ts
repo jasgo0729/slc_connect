@@ -35,7 +35,7 @@ export interface ConnectDetail {
   /** C-09 개설 반려 사유. 팀장에게만 의미가 있다. */
   rejectionReason: string | null;
 
-  members: { id: string; label: string; residence: string | null }[];
+  members: { id: string; label: string; residence: string | null; role: string }[];
   /** 보는 사람의 상태. 화면 하단 버튼이 이 값으로 갈린다. */
   viewer: {
     isLeader: boolean;
@@ -118,6 +118,7 @@ export async function getConnectDetail(
       id: m.userId,
       label: `${m.cohort} ${maskName(m.name)}`,
       residence: m.residence,
+      role: m.role,
     })),
 
     viewer: {

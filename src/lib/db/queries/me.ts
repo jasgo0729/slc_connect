@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '../client';
-import { applications, connects, favorites, mbtiResults, memberships, roster, tags, userTags, users } from '../schema';
+import { applications, connects, favorites, mbtiResults, memberships, roster, users } from '../schema';
 
 /**
  * 마이페이지.
@@ -22,7 +22,6 @@ export interface MyConnect {
   /** 신청 목록에서만 채워진다. */
   myApplication?: string;
   hasMessage?: boolean;
-  myRole?: 'leader' | 'member' | string | null;
 }
 
 const memberCount = sql<number>`(
@@ -151,16 +150,6 @@ export async function getApplicantsForLed(
     message: r.message,
     status: r.status as 'pending' | 'approved',
   }));
-}
-
-/** 프로필 폼에 되돌려 줄 값. 저장한 것이 다음에 열었을 때 그대로 보여야 한다. */
-export async function getMyTags(userId: string): Promise<string[]> {
-  const rows = await db
-    .select({ name: tags.name })
-    .from(userTags)
-    .innerJoin(tags, eq(userTags.tagId, tags.id))
-    .where(eq(userTags.userId, userId));
-  return rows.map((r) => r.name);
 }
 
 /** A-07 Connect-MBTI 최신 결과. */
