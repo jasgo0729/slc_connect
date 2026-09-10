@@ -1286,3 +1286,125 @@ a.admin-card:hover { border-color: var(--blue-soft); }
   left: 0;
   color: var(--s300);
 }
+
+/* =========================================================
+   Connect-MBTI (F-02·F-03)
+   ========================================================= */
+
+.mbti-intro,
+.mbti-quiz {
+  min-height: calc(100dvh - 56px);
+  display: grid;
+  place-items: center;
+  padding: 32px var(--gutter) calc(var(--nav-h) + env(safe-area-inset-bottom) + 40px);
+}
+@media (min-width: 900px) {
+  .mbti-intro,
+  .mbti-quiz { min-height: calc(100dvh - 68px); padding-bottom: 64px; }
+}
+
+.mbti-intro-inner,
+.mbti-quiz-inner { width: 100%; max-width: 420px; }
+
+.mbti-eyebrow-label {
+  font-size: 12px; font-weight: 700; letter-spacing: .04em;
+  color: var(--blue); text-align: center;
+}
+
+.mbti-intro-inner { text-align: center; }
+.mbti-intro-title { margin-top: 12px; font-size: 30px; font-weight: 800; line-height: 1.3; }
+.mbti-intro-body { margin-top: 12px; font-size: 14px; line-height: 1.6; color: var(--muted); }
+
+.mbti-intro-faces {
+  display: flex; justify-content: center; flex-wrap: wrap; gap: 8px;
+  margin: 28px 0;
+}
+.mbti-intro-faces span {
+  width: 52px; height: 52px; display: grid; place-items: center;
+  font-size: 26px; border-radius: 50%; background: var(--card);
+  border: 1px solid var(--line);
+}
+
+/* ── 문항 ─────────────────────────────────────────────── */
+
+.mbti-progress { display: flex; align-items: center; gap: 12px; }
+.mbti-progress-n { font-size: 12px; font-weight: 700; color: var(--muted); flex: none; }
+.mbti-progress-bar {
+  flex: 1; height: 6px; border-radius: 100px; background: var(--s100); overflow: hidden;
+}
+.mbti-progress-bar span {
+  display: block; height: 100%; background: var(--blue);
+  transition: width .25s ease;
+}
+
+.mbti-q-label { margin-top: 32px; font-size: 13px; font-weight: 700; color: var(--blue); }
+.mbti-q { margin-top: 8px; font-size: 19px; font-weight: 800; line-height: 1.45; }
+
+.mbti-choices { display: grid; gap: 10px; margin-top: 24px; }
+.mbti-choice {
+  padding: 18px 20px; text-align: left;
+  font-family: inherit; font-size: 14px; line-height: 1.6; color: var(--s600);
+  background: var(--card); border: 1.5px solid var(--line-strong);
+  border-radius: var(--r-lg); cursor: pointer;
+  transition: border-color .15s, background .15s, transform .12s;
+}
+.mbti-choice:hover { border-color: var(--blue); background: var(--blue-wash); color: var(--s800); }
+.mbti-choice:active { transform: scale(.99); }
+
+.mbti-back { display: block; margin: 18px auto 0; }
+
+/* ── 결과 ─────────────────────────────────────────────── */
+
+.mbti-result {
+  min-height: calc(100dvh - 56px);
+  padding: 28px var(--gutter) 48px;
+  background: var(--page);
+}
+.mbti-result-inner { width: 100%; max-width: 420px; margin: 0 auto; text-align: center; }
+
+/* 유형마다 다른 색. --tint 와 --accent 는 컴포넌트가 넘긴다. */
+.mbti-face {
+  width: 120px; height: 120px; margin: 20px auto 0;
+  display: grid; place-items: center;
+  font-size: 56px; line-height: 1;
+  border-radius: 50%; background: var(--tint);
+}
+
+.mbti-title { margin-top: 20px; font-size: 22px; font-weight: 800; line-height: 1.35; }
+.mbti-code {
+  margin-top: 6px; font-size: 26px; font-weight: 800; letter-spacing: .06em;
+  color: var(--accent);
+}
+
+.mbti-desc {
+  margin-top: 16px; font-size: 13.5px; line-height: 1.7; color: var(--s500);
+}
+
+.mbti-tags {
+  display: flex; justify-content: center; flex-wrap: wrap; gap: 6px;
+  margin-top: 20px;
+}
+.mbti-tags span {
+  padding: 5px 11px; border-radius: 100px;
+  background: var(--tint); color: var(--accent);
+  font-size: 11.5px; font-weight: 600;
+}
+
+.mbti-match {
+  margin-top: 24px; padding: 16px 18px; text-align: left;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg);
+}
+.mbti-match-head { font-size: 14px; font-weight: 700; color: var(--s800); }
+.mbti-match-body { margin-top: 8px; font-size: 12.5px; line-height: 1.65; color: var(--muted); }
+
+.mbti-cta {
+  display: block; margin-top: 24px; padding: 16px;
+  border-radius: var(--r-lg); background: var(--tint); color: var(--accent);
+  font-size: 15px; font-weight: 800; text-align: center;
+  transition: filter .15s;
+}
+.mbti-cta:hover { filter: brightness(.96); }
+
+.mbti-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.mbti-note { margin-top: 18px; font-size: 12.5px; color: var(--muted); }
+.mbti-note a { color: var(--blue); font-weight: 600; text-decoration: underline; }
