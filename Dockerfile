@@ -65,6 +65,7 @@ CMD ["node", "server.js"]
 FROM node:22-alpine AS migrator
 WORKDIR /app
 ENV TZ=Asia/Seoul
+ENV DRIZZLE_BASE=.
 RUN apk add --no-cache tzdata
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json drizzle.config.ts tsconfig.json ./
