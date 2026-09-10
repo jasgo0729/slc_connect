@@ -13,12 +13,6 @@ import type { RecommendState } from './actions';
  * 이미 재료이므로 입력이 없어도 결과가 나온다 — 무엇을 할지
  * 모르는 사람이 대상이라 빈칸에서 막히면 안 된다.
  */
-const EXAMPLES = [
-  '운동하면서 사람들 만나고 싶어요',
-  '공모전 준비해보고 싶은데 혼자는 막막해요',
-  '평일 저녁에 가볍게 만날 모임',
-  '뭔가 만들어보고 싶어요',
-];
 
 export function RecommendForm({
   hasMbti,
@@ -52,14 +46,6 @@ export function RecommendForm({
           onChange={(e) => setKeyword(e.target.value)}
           placeholder="한 줄만 적어주세요. 정하지 않았어도 괜찮아요."
         />
-
-        <div className="reco-examples">
-          {EXAMPLES.map((e) => (
-            <button key={e} type="button" className="chip" onClick={() => setKeyword(e)}>
-              {e}
-            </button>
-          ))}
-        </div>
 
         {/* 재료가 없으면 결과가 뻔해진다. 미리 알려 주되 막지는 않는다. */}
         {!hasMbti && !hasProfile && (
