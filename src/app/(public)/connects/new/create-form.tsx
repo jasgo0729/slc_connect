@@ -14,6 +14,7 @@ import {
   TAGLINE_MAX,
   TRACKS,
 } from '@/lib/connects/options';
+import { Modal } from '@/components/ui/modal';
 import { submitCreate } from './actions';
 import type { CreateState } from './actions';
 
@@ -61,15 +62,23 @@ export function CreateForm() {
   const [goalDate, setGoalDate] = useState('');
   const [period, setPeriod] = useState('');
   const [isPublic, setIsPublic] = useState(true);
+  const [dismissed, setDismissed] = useState(false);
 
   const e = state.errors ?? {};
+  const blockedLabel = state.blockedTrack === 'qualitative' ? '도전' : '취미';
   const toggleDay = (d: number) =>
     setDays((v) => (v.includes(d) ? v.filter((x) => x !== d) : [...v, d]));
   const toggleCond = (c: string) =>
     setConds((v) => (v.includes(c) ? v.filter((x) => x !== c) : [...v, c]));
 
   return (
-    <form action={action} className="createform">
+    <form
+      action={(fd) => {
+        setDismissed(false);
+        action(fd);
+      }}
+      className="createform"
+    >
       {/* ── 트랙. 나머지 폼의 모양을 바꾸므로 맨 앞에 둔다 ── */}
       <section className="fgroup">
         <h2 className="fgroup-title">어떤 커넥트인가요</h2>
@@ -415,6 +424,17 @@ export function CreateForm() {
         )}
         <Submit track={track} />
       </div>
+
+      {/* 트랙당 하나 제한. 입력을 고쳐서 풀 수 없는 문제라
+          입력칸 아래 작은 글씨 대신 화면 가운데에 알린다. */}
+      <Modal
+        open={state.blocked === 'DUPLICATE_TRACK' && !dismissed}
+        tone="error"
+        title={`이미 ${blockedLabel} 커넥트를 만드셨어요`}
+        body={`${blockedLabel} 트랙은 한 사람당 하나만 개설할 수 있어요. 다른 트랙으로 만들거나, 만들어 둔 커넥트를 마이페이지에서 수정해 주세요.`}
+        action="확인"
+        onAction={() => setDismissed(true)}
+      />
     </form>
   );
 }

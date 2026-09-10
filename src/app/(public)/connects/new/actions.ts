@@ -16,6 +16,12 @@ import {
 
 export interface CreateState {
   errors?: Record<string, string>;
+  /**
+   * 중복 개설처럼 폼을 고쳐서 해결할 수 없는 경우.
+   * 입력칸 아래 작은 글씨로는 눈에 띄지 않아 화면 가운데에 알린다.
+   */
+  blocked?: 'DUPLICATE_TRACK';
+  blockedTrack?: string;
 }
 
 /**
@@ -98,8 +104,9 @@ export async function submitCreate(
   }
 
   // 한 사람이 같은 트랙의 팀을 여럿 이끌면 어느 쪽도 굴러가지 않는다.
+  // 폼을 고쳐서 풀 수 있는 문제가 아니므로 알림창으로 알린다.
   if (!errors.track && (await hasConnectInTrack(user.id, track))) {
-    errors.track = `이미 ${track === 'qualitative' ? '도전' : '취미'} 커넥트를 이끌고 있어요. 트랙당 하나만 만들 수 있어요.`;
+    return { blocked: 'DUPLICATE_TRACK', blockedTrack: track };
   }
 
   if (Object.keys(errors).length > 0) return { errors };

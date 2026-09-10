@@ -96,9 +96,16 @@ button { font-family: inherit; }
    본문 폭은 넓히되 읽는 영역(상세·개설)은 따로 좁힌다. */
 .shell { width: 100%; max-width: 1200px; margin: 0 auto; padding-inline: var(--gutter); }
 
-/* 모바일은 하단 탭바 높이만큼 본문을 띄운다 */
-.page { padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px); }
-@media (min-width: 900px) { .page { padding-bottom: 64px; } }
+/* 하단 탭바에 가리지 않도록 본문 아래를 띄운다.
+   화면별 규칙에서는 padding-top 만 쓴다 — padding-block 으로 위아래를
+   한꺼번에 지정하면 이 값이 덮여 화면 맨 아래가 탭바에 가린다.
+   iOS Safari의 하단 바까지 고려해 넉넉히 잡는다. */
+main.page {
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 40px);
+}
+@media (min-width: 900px) {
+  main.page { padding-bottom: 64px; }
+}
 
 /* =========================================================
    상단 바
@@ -342,7 +349,7 @@ button { font-family: inherit; }
    ========================================================= */
 
 /* 상세는 읽는 화면이다. 본문 폭을 좁혀 가운데로 모은다. */
-.detail { padding-block: 20px; }
+.detail { padding-top: 20px; }
 @media (min-width: 900px) {
   .detail-page { max-width: 1000px; }
 }
@@ -387,8 +394,9 @@ button { font-family: inherit; }
 
 /* 하단 고정 액션 → 데스크탑에서는 오른쪽 기둥 카드.
    상세 화면에는 탭바를 두지 않는다. 둘 다 화면 아래 고정이라 겹친다. */
-.detail-page { padding-bottom: 108px; }
-@media (min-width: 900px) { .detail-page { padding-bottom: 64px; } }
+/* 상세에는 하단 고정 액션바가 있어 탭바보다 더 띄워야 한다. */
+main.detail-page { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+@media (min-width: 900px) { main.detail-page { padding-bottom: 64px; } }
 
 .actionbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 35;
@@ -641,7 +649,7 @@ select.input {
    ========================================================= */
 
 /* 개설 폼도 읽고 쓰는 화면이라 가운데로 모은다. */
-.create { padding-block: 20px; }
+.create { padding-top: 20px; }
 @media (min-width: 900px) {
   .create { max-width: 780px; }
 }
@@ -752,7 +760,7 @@ select.input {
    마이페이지
    ========================================================= */
 
-.me { padding-block: 18px; }
+.me { padding-top: 18px; }
 @media (min-width: 900px) { .me { max-width: 760px; } }
 
 .me-title { font-size: 20px; font-weight: 800; }
@@ -887,7 +895,7 @@ select.input {
    팀 관리 (D-02 신청 처리)
    ========================================================= */
 
-.manage { padding-block: 18px; }
+.manage { padding-top: 18px; }
 @media (min-width: 900px) { .manage { max-width: 760px; } }
 
 .count-pill {
@@ -1061,7 +1069,7 @@ a.noti-row:hover { opacity: .78; }
 
 /* ── 준비 중 화면 ─────────────────────────────────────── */
 
-.soon { display: grid; place-items: center; min-height: 60vh; }
+.soon { display: grid; place-items: center; min-height: 55vh; }
 .soon-inner { max-width: 26rem; text-align: center; padding: 32px 0; }
 .soon-when {
   font-size: 11px; font-weight: 700; letter-spacing: .1em;
@@ -1206,3 +1214,25 @@ a.admin-card:hover { border-color: var(--blue-soft); }
 
 /* 개설 목록의 상태 배지 줄 */
 .led-meta { display: inline-flex; align-items: center; gap: 8px; }
+
+/* ── 씨앗판 하단 안내 ─────────────────────────────────── */
+
+.notes {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.notes ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.notes li {
+  position: relative;
+  padding-left: 15px;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+.notes li::before {
+  content: '※';
+  position: absolute;
+  left: 0;
+  color: var(--s300);
+}
