@@ -452,12 +452,16 @@ export function CreateForm() {
       </div>
 
       {/* 트랙당 하나 제한. 입력을 고쳐서 풀 수 없는 문제라
-          입력칸 아래 작은 글씨 대신 화면 가운데에 알린다. */}
+          입력칸 아래 작은 글씨 대신 화면 가운데에 알린다.
+
+          '개설했다'가 아니라 '속해 있다'로 쓴다. 만든 적이 없어도
+          남의 커넥트에 참여 중이면 막히는데, 개설 기준으로 말하면
+          "나는 만든 적 없는데?"가 된다. */}
       <Modal
         open={state.blocked === 'DUPLICATE_TRACK' && !dismissed}
         tone="error"
-        title={`이미 ${blockedLabel} 커넥트를 만드셨어요`}
-        body={`${blockedLabel} 트랙은 한 사람당 하나만 개설할 수 있어요. 다른 트랙으로 만들거나, 만들어 둔 커넥트를 마이페이지에서 수정해 주세요.`}
+        title={`이미 ${blockedLabel} 커넥트에 속해 있어요`}
+        body={`${blockedLabel} 트랙은 하나에만 속할 수 있어요. 다른 트랙으로 만들거나, 지금 속한 ${blockedLabel} 커넥트에서 나온 뒤에 다시 시도해 주세요.`}
         action="확인"
         onAction={() => setDismissed(true)}
       />

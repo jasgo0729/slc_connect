@@ -68,7 +68,7 @@ export async function applyAction(
       // 트랙 이름이 들어가야 무엇을 정리해야 하는지 알 수 있다.
       const label = track === 'qualitative' ? '도전' : '취미';
       return {
-        error: `이미 참여 중인 ${label} 커넥트가 있어요. ${label} 트랙은 하나에만 참여할 수 있어요.`,
+        error: `이미 ${label} 커넥트에 속해 있어요. ${label} 트랙은 하나에만 속할 수 있어요.`,
       };
     }
     return { error: APPLY_MESSAGES[result.reason] };

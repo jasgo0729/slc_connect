@@ -146,7 +146,8 @@ export async function submitCreate(
     activityPeriod: activityPeriod ?? '',
   };
 
-  // 한 사람은 트랙당 하나에만 속한다. 개설이든 참여든 같은 제한이다.
+  // 한 사람은 트랙당 하나에만 속한다. 개설이든 참여든 같은 제한이라
+  // '이미 만들었다'가 아니라 '이미 속해 있다'로 판정한다.
   // 폼을 고쳐서 풀 수 있는 문제가 아니므로 알림창으로 알린다.
   if (!errors.track && (await hasConnectInTrack(user.id, track))) {
     return { blocked: 'DUPLICATE_TRACK', blockedTrack: track, values };
