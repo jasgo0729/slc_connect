@@ -436,3 +436,21 @@ export async function getApplicationTarget(
     .limit(1);
   return rows[0] ?? null;
 }
+
+/** 남은 자리. 마감 임박 알림의 기준이다. */
+export async function getRemainingSeats(connectId: string): Promise<number | null> {
+  const rows = await db
+    .select({
+      capacity: connects.capacity,
+      n: sql<number>`(
+        SELECT COUNT(*)::int FROM memberships m
+        WHERE m.connect_id = connects.id AND m.left_at IS NULL
+      )`,
+    })
+    .from(connects)
+    .where(eq(connects.id, connectId))
+    .limit(1);
+
+  const r = rows[0];
+  return r ? Math.max(0, r.capacity - r.n) : null;
+}

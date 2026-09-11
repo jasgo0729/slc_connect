@@ -27,7 +27,7 @@ export function ConnectTable({ items, status }: { items: AdminConnect[]; status:
     start(async () => {
       setError(null);
       setBusy(c.id);
-      const r = await setCapacityAction(c.id, c.capacity + delta);
+      const r = await setCapacityAction(c.id, c.capacity + delta, c.capacity);
       if (r.error) setError(r.error);
       setBusy(null);
     });

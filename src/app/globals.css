@@ -1573,3 +1573,7 @@ a.admin-card:hover { border-color: var(--blue-soft); }
 /* 공통은 기본 회색 테두리를 그대로 쓴다. 색이 없는 것 자체가
    '양 캠퍼스 어디든'이라는 표시가 된다. */
 .ccard--both:hover { border-color: var(--blue-soft); }
+
+.warn-confirm { display: grid; gap: 10px; justify-items: end; }
+.warn-confirm .field-hint { margin: 0; }
+.warn-confirm .actionbar-row { margin: 0; }

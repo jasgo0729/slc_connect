@@ -1,7 +1,7 @@
 import 'server-only';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
-import { memberships, notifications } from '@/lib/db/schema';
+import { favorites, memberships, notifications } from '@/lib/db/schema';
 
 /**
  * 알림 발송 (H절).
@@ -22,6 +22,10 @@ export type NotifyType =
   | 'member_joined' // 취미 커넥트에 바로 합류함
   | 'application_approved' // 내 신청이 승인됨
   | 'application_rejected' // 내 신청이 거절됨
+  | 'favorite_milestone' // 내 커넥트가 관심을 받음 (1·5·10건)
+  | 'favorite_capacity' // 찜한 커넥트의 정원이 바뀜
+  | 'favorite_closing' // 찜한 커넥트의 자리가 얼마 안 남음
+  | 'short_warning' // 인원 미달 경고 (D-10)
   | 'season_confirmed'
   | 'notice';
 
@@ -151,4 +155,169 @@ export async function notifyApplicationDecided(
       link: approved ? `/connects/${connectId}` : '/connects',
     },
   ]);
+}
+
+/* ── D-08 찜 관련 ──────────────────────────────────────── */
+
+/**
+ * 같은 알림을 이미 보냈는지.
+ *
+ * 찜은 켰다 껐다 할 수 있어서 임계값을 여러 번 넘나든다.
+ * 제목까지 같으면 이미 보낸 것으로 보고 건너뛴다.
+ */
+async function alreadySent(userId: string, type: NotifyType, title: string): Promise<boolean> {
+  try {
+    const rows = await db
+      .select({ id: notifications.id })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.userId, userId),
+          eq(notifications.type, type),
+          eq(notifications.title, title),
+        ),
+      )
+      .limit(1);
+    return rows.length > 0;
+  } catch {
+    // 확인에 실패하면 보내지 않는다. 중복이 안 보내는 것보다 나쁘다.
+    return true;
+  }
+}
+
+/** 관심도가 눈에 띄게 쌓였을 때만 알린다. 매 건 보내면 잡음이 된다. */
+const FAVORITE_MILESTONES = [1, 5, 10];
+
+export async function notifyFavoriteMilestone(
+  connectId: string,
+  connectName: string,
+  count: number,
+): Promise<void> {
+  if (!FAVORITE_MILESTONES.includes(count)) return;
+
+  const leader = await leaderOf(connectId);
+  if (!leader) return;
+
+  const title =
+    count === 1 ? '누군가 관심을 보였어요' : `${count}명이 찜했어요`;
+  if (await alreadySent(leader, 'favorite_milestone', title)) return;
+
+  await push([
+    {
+      userId: leader,
+      type: 'favorite_milestone',
+      title,
+      body:
+        count === 1
+          ? `'${connectName}'을(를) 찜한 사람이 생겼어요. 초대 링크를 한 번 더 공유해 보세요.`
+          : `'${connectName}'에 관심이 모이고 있어요.`,
+      link: `/connects/${connectId}`,
+    },
+  ]);
+}
+
+/** 찜한 사람 중 아직 참여하지 않은 사람. 알림 대상이다. */
+async function favoriteWatchers(connectId: string): Promise<string[]> {
+  try {
+    const rows = await db
+      .select({ userId: favorites.userId })
+      .from(favorites)
+      .where(eq(favorites.connectId, connectId));
+
+    const members = await db
+      .select({ userId: memberships.userId })
+      .from(memberships)
+      .where(and(eq(memberships.connectId, connectId), sql`${memberships.leftAt} IS NULL`));
+
+    const joined = new Set(members.map((m) => m.userId));
+    return rows.map((r) => r.userId).filter((id) => !joined.has(id));
+  } catch {
+    return [];
+  }
+}
+
+/** 정원이 바뀌면 찜한 사람의 판단이 달라진다. */
+export async function notifyCapacityChanged(
+  connectId: string,
+  connectName: string,
+  from: number,
+  to: number,
+): Promise<void> {
+  const watchers = await favoriteWatchers(connectId);
+  if (watchers.length === 0) return;
+
+  await push(
+    watchers.map((userId) => ({
+      userId,
+      type: 'favorite_capacity' as const,
+      title: to > from ? '찜한 커넥트에 자리가 늘었어요' : '찜한 커넥트의 정원이 바뀌었어요',
+      body: `'${connectName}' 정원이 ${from}명에서 ${to}명으로 바뀌었어요.`,
+      link: `/connects/${connectId}`,
+    })),
+  );
+}
+
+/**
+ * 자리가 얼마 안 남았을 때.
+ *
+ * 한 자리 남은 시점과 다 찬 시점에만 보낸다. 들어올 때마다 보내면
+ * 찜해 둔 사람의 알림함이 그 커넥트로만 찬다.
+ */
+export async function notifyClosingSoon(
+  connectId: string,
+  connectName: string,
+  remaining: number,
+): Promise<void> {
+  if (remaining !== 1 && remaining !== 0) return;
+
+  const watchers = await favoriteWatchers(connectId);
+  if (watchers.length === 0) return;
+
+  const title = remaining === 0 ? '찜한 커넥트의 자리가 찼어요' : '찜한 커넥트에 한 자리 남았어요';
+
+  const rows: Payload[] = [];
+  for (const userId of watchers) {
+    if (await alreadySent(userId, 'favorite_closing', title)) continue;
+    rows.push({
+      userId,
+      type: 'favorite_closing',
+      title,
+      body:
+        remaining === 0
+          ? `'${connectName}'이(가) 정원을 채웠어요.`
+          : `'${connectName}'에 한 자리만 남았어요. 마음이 있다면 지금 신청해 주세요.`,
+      link: `/connects/${connectId}`,
+    });
+  }
+  await push(rows);
+}
+
+/* ── D-10 인원 미달 경고 ───────────────────────────────── */
+
+/**
+ * 마감 전 미달 경고.
+ *
+ * 팀장에게 지금 몇 명이고 몇 명이 더 필요한지 숫자로 알린다.
+ * "인원이 부족합니다"만으로는 무엇을 해야 할지 알 수 없다.
+ */
+export async function notifyShortWarning(
+  connectId: string,
+  connectName: string,
+  memberCount: number,
+  minimum = 4,
+): Promise<boolean> {
+  const leader = await leaderOf(connectId);
+  if (!leader) return false;
+
+  const short = Math.max(0, minimum - memberCount);
+  await push([
+    {
+      userId: leader,
+      type: 'short_warning',
+      title: '인원이 모자라요',
+      body: `'${connectName}' 현재 ${memberCount}명 신청 중입니다. 최소 인원 ${minimum}명까지 ${short}명 남았어요. 마감일까지 인원이 채워지지 않으면 팀이 해산될 수 있으니, 발급받으신 초대 링크를 주변에 한 번 더 공유해 보세요.`,
+      link: `/connects/${connectId}`,
+    },
+  ]);
+  return true;
 }

@@ -11,14 +11,20 @@ import {
   rejectApplication,
   setEarlyClosed,
 } from '@/lib/db/queries/applications';
-import { toggleFavorite } from '@/lib/db/queries/favorites';
+import { countFavorites, toggleFavorite } from '@/lib/db/queries/favorites';
 import { LEAVE_MESSAGES, leaveConnect } from '@/lib/db/queries/leave';
 import { isRejectReason, rejectLabel } from '@/lib/connects/reject-reasons';
 import {
   notifyApplicationDecided,
   notifyApplicationReceived,
+  notifyClosingSoon,
+  notifyFavoriteMilestone,
 } from '@/lib/notify/send';
-import { getApplicationTarget, getConnectBrief } from '@/lib/db/queries/applications';
+import {
+  getApplicationTarget,
+  getConnectBrief,
+  getRemainingSeats,
+} from '@/lib/db/queries/applications';
 
 /**
  * 상세·관리 화면의 행동들.
@@ -33,6 +39,16 @@ export async function favoriteAction(connectId: string): Promise<boolean> {
   if (!user) redirect(`/login?callbackUrl=${encodeURIComponent(`/connects/${connectId}`)}`);
 
   const on = await toggleFavorite(user.id, connectId);
+
+  // 찜이 쌓이면 개설자에게 알린다. 매 건이 아니라 1·5·10건에서만.
+  if (on) {
+    const [count, brief] = await Promise.all([
+      countFavorites(connectId),
+      getConnectBrief(connectId),
+    ]);
+    if (brief) await notifyFavoriteMilestone(connectId, brief.name, count);
+  }
+
   revalidatePath(`/connects/${connectId}`);
   revalidatePath('/connects');
   return on;
@@ -62,6 +78,13 @@ export async function applyAction(
   const brief = await getConnectBrief(connectId);
   if (brief) {
     await notifyApplicationReceived(connectId, brief.name, user.name, result.joined);
+
+    // 자리가 줄었으면 찜해 둔 사람에게도 알린다.
+    // 한 자리 남았을 때와 다 찼을 때만 나간다.
+    if (result.joined) {
+      const seats = await getRemainingSeats(connectId);
+      if (seats !== null) await notifyClosingSoon(connectId, brief.name, seats);
+    }
   }
 
   revalidatePath(`/connects/${connectId}`);
@@ -106,7 +129,11 @@ export async function approveAction(
   }
 
   const t = await getApplicationTarget(applicationId);
-  if (t) await notifyApplicationDecided(t.userId, connectId, t.connectName, true);
+  if (t) {
+    await notifyApplicationDecided(t.userId, connectId, t.connectName, true);
+    const seats = await getRemainingSeats(connectId);
+    if (seats !== null) await notifyClosingSoon(connectId, t.connectName, seats);
+  }
 
   revalidatePath(`/connects/${connectId}/manage`);
   revalidatePath(`/connects/${connectId}`);

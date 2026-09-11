@@ -1,5 +1,6 @@
 import { getMemberStats, getShortConnects, getUnassignedMembers } from '@/lib/db/queries/admin-ops';
 import { trackLabel } from '@/lib/connects/options';
+import { ShortWarningButton } from './short-warning';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,9 +62,12 @@ export default async function AdminMembersPage() {
       </section>
 
       {/* D-14 — 이 둘을 맞붙이는 것이 실제 작업이다 */}
-      <h2 className="me-sectitle me-sectitle--gap">
-        인원이 모자란 커넥트 <span className="me-sectitle-sub">{short.length}곳</span>
-      </h2>
+      <div className="me-sechead">
+        <h2 className="me-sectitle">
+          인원이 모자란 커넥트 <span className="me-sectitle-sub">{short.length}곳</span>
+        </h2>
+        <ShortWarningButton count={short.length} />
+      </div>
       <section className="card-block card-block--flush">
         {short.length === 0 ? (
           <p className="mini-empty">4명 미만인 커넥트가 없어요.</p>
