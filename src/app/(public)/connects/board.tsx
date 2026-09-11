@@ -91,7 +91,7 @@ export function Board({
             <Link href="/mbti" className="mbti-card">
               <p className="mbti-eyebrow">CONNECT MBTI</p>
               <p className="mbti-title">
-                성향으로 맞는
+                내 성향에 맞는
                 <br />
                 커넥트 찾기
               </p>

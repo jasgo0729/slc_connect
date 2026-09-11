@@ -5,9 +5,11 @@ import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/session';
 import {
   confirmAllTeams,
+  searchRecipients,
   sendNotice,
   setCapacity,
   type NotifyAudience,
+  type Recipient,
 } from '@/lib/db/queries/admin-ops';
 import { setSeasonValue } from '@/lib/db/queries/season';
 import { notifyCapacityChanged, notifyShortWarning } from '@/lib/notify/send';
@@ -57,6 +59,8 @@ export async function sendNoticeAction(
   title: string,
   body: string,
   link: string,
+  /** 직접 고르기에서 선택한 사람. 다른 대상에서는 무시된다. */
+  userIds: string[] = [],
 ): Promise<{ error?: string; sent?: number }> {
   const a = await admin();
 
@@ -64,14 +68,23 @@ export async function sendNoticeAction(
   const b = body.trim();
   if (!t) return { error: '제목을 입력해주세요.' };
   if (!b) return { error: '내용을 입력해주세요.' };
+  if (audience === 'custom' && userIds.length === 0) {
+    return { error: '받을 사람을 골라주세요.' };
+  }
 
   // 열린 리다이렉트 방지 — 같은 사이트 경로만 허용한다.
   const safe = link.trim();
   const href = safe.startsWith('/') && !safe.startsWith('//') ? safe : null;
 
-  const sent = await sendNotice(a.id, audience, t, b, href);
+  const sent = await sendNotice(a.id, audience, t, b, href, userIds);
   revalidatePath('/admin/notify');
   return { sent };
+}
+
+/** 공지 대상을 이름·학번으로 찾는다. */
+export async function searchRecipientsAction(query: string): Promise<Recipient[]> {
+  await admin();
+  return searchRecipients(query);
 }
 
 /** J-07 랭킹 공개 모드 등 시즌 설정. */

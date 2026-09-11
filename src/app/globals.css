@@ -1577,3 +1577,53 @@ a.admin-card:hover { border-color: var(--blue-soft); }
 .warn-confirm { display: grid; gap: 10px; justify-items: end; }
 .warn-confirm .field-hint { margin: 0; }
 .warn-confirm .actionbar-row { margin: 0; }
+
+/* ── 알림 켜기 (H-03) ─────────────────────────────────── */
+
+.push-box {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin-top: 14px; padding: 16px 18px;
+  background: var(--blue-wash); border: 1px solid rgba(49, 82, 234, .18);
+  border-radius: var(--r-lg);
+}
+.push-head { display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 0; }
+.push-icon {
+  width: 38px; height: 38px; flex: none;
+  display: grid; place-items: center; border-radius: 50%;
+  background: var(--card); color: var(--blue);
+}
+.push-title { font-size: 14px; font-weight: 700; color: var(--s800); }
+.push-sub { margin-top: 3px; font-size: 12.5px; line-height: 1.55; color: var(--s500); }
+.push-box .btn { flex: none; }
+
+/* ── 공지 받을 사람 고르기 ────────────────────────────── */
+
+.picker { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+
+.picker-results {
+  margin-top: 8px; border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--card); overflow: hidden; max-height: 240px; overflow-y: auto;
+}
+.picker-empty { padding: 14px 16px; font-size: 13px; color: var(--muted); }
+
+.picker-row {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  padding: 11px 14px; border: 0; border-bottom: 1px solid var(--line);
+  background: none; font-family: inherit; text-align: left; cursor: pointer;
+}
+.picker-row:last-child { border-bottom: 0; }
+.picker-row:hover:not(:disabled) { background: var(--blue-wash); }
+.picker-row:disabled { cursor: default; opacity: .55; }
+.picker-row svg { color: var(--s300); flex: none; }
+
+.picker-name { font-size: 14px; font-weight: 600; color: var(--s800); flex: none; }
+.picker-meta { font-size: 12px; color: var(--muted); }
+.picker-added { margin-left: auto; font-size: 11px; color: var(--blue); font-weight: 600; }
+
+.picker-selected { margin-top: 14px; }
+.picker-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  border-color: var(--blue); color: var(--blue); background: var(--blue-wash);
+  cursor: pointer;
+}
+.picker-chip:hover { background: #dfe7fd; }

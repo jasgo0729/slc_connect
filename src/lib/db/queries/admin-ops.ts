@@ -273,15 +273,67 @@ export async function getStaleConnects(days = 5): Promise<ShortConnect[]> {
    J-04 공지·알림 발송
    ========================================================= */
 
-export type NotifyAudience = 'all' | 'leaders' | 'unassigned';
+export type NotifyAudience = 'all' | 'leaders' | 'unassigned' | 'custom';
 
 export const AUDIENCES: { value: NotifyAudience; label: string; hint: string }[] = [
   { value: 'all', label: '전체', hint: '가입한 모든 사람' },
-  { value: 'leaders', label: '팀장만', hint: '운영 단계의 전달은 팀장을 통한다(H-07)' },
+  { value: 'leaders', label: '팀장만', hint: '운영 단계의 전달은 팀장을 통해서' },
   { value: 'unassigned', label: '커넥트 미소속', hint: '아직 어디에도 속하지 않은 사람' },
+  { value: 'custom', label: '직접 고르기', hint: '이름으로 찾아 몇 명만' },
 ];
 
-async function resolveAudience(audience: NotifyAudience): Promise<string[]> {
+/** 공지 대상을 고르기 위한 검색 결과. */
+export interface Recipient {
+  id: string;
+  name: string;
+  cohort: string;
+  slc: string;
+  campus: string;
+  studentNo: string;
+}
+
+/**
+ * 이름·학번으로 사람을 찾는다.
+ *
+ * 개인 대상 공지는 예외적인 경로다. 문의에 답하거나 특정 팀장에게
+ * 따로 알릴 때 쓴다. 전체 목록을 펼쳐 두면 대량 발송처럼 쓰이게
+ * 되므로 검색으로만 닿게 한다.
+ */
+export async function searchRecipients(query: string): Promise<Recipient[]> {
+  const q = query.trim();
+  if (q.length < 1) return [];
+
+  const like = `%${q}%`;
+  return db
+    .select({
+      id: users.id,
+      name: roster.name,
+      cohort: roster.cohort,
+      slc: roster.slc,
+      campus: roster.campus,
+      studentNo: roster.studentNo,
+    })
+    .from(users)
+    .innerJoin(roster, eq(users.studentNo, roster.studentNo))
+    .where(sql`${roster.name} ILIKE ${like} OR ${roster.studentNo} LIKE ${like}`)
+    .orderBy(asc(roster.name))
+    .limit(20);
+}
+
+async function resolveAudience(
+  audience: NotifyAudience,
+  userIds: string[] = [],
+): Promise<string[]> {
+  if (audience === 'custom') {
+    if (userIds.length === 0) return [];
+    // 화면에서 고른 값을 그대로 믿지 않는다. 실재하는 계정만 남긴다.
+    const rows = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(inArray(users.id, userIds));
+    return rows.map((r) => r.id);
+  }
+
   if (audience === 'leaders') {
     const rows = await db
       .selectDistinct({ id: memberships.userId })
@@ -300,14 +352,16 @@ async function resolveAudience(audience: NotifyAudience): Promise<string[]> {
 
 /** 대상 인원 미리 세기. 보내기 전에 몇 명에게 가는지 알아야 한다. */
 export async function countAudience(audience: NotifyAudience): Promise<number> {
+  if (audience === 'custom') return 0; // 고른 만큼이라 미리 셀 것이 없다
   return (await resolveAudience(audience)).length;
 }
 
 /**
  * J-04 공지 발송.
  *
- * H-07에 따라 개인 대상 알림은 두지 않는다. 전체·팀장·미소속 셋뿐이다.
- * 웹 푸시와 이메일은 아직 붙지 않았으므로 지금은 앱 안의 알림함에만 쌓인다.
+ * 전체·팀장·미소속에 더해 개인 지정도 둔다. 문의에 답하거나 특정
+ * 팀장에게만 알릴 일이 실제로 생긴다. 다만 검색으로만 닿게 해서
+ * 대량 발송을 개인 발송으로 대신하는 쓰임을 막는다.
  */
 export async function sendNotice(
   adminId: string,
@@ -315,8 +369,9 @@ export async function sendNotice(
   title: string,
   body: string,
   link?: string | null,
+  userIds: string[] = [],
 ): Promise<number> {
-  const ids = await resolveAudience(audience);
+  const ids = await resolveAudience(audience, userIds);
   if (ids.length === 0) return 0;
 
   const CHUNK = 500;

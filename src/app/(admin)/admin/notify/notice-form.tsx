@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from 'react';
 import { Notice } from '@/components/ui/notice';
+import { RecipientPicker } from './recipient-picker';
 import { sendNoticeAction } from '../actions';
-import type { NotifyAudience } from '@/lib/db/queries/admin-ops';
+import type { NotifyAudience, Recipient } from '@/lib/db/queries/admin-ops';
 
 /**
  * 공지 작성.
@@ -17,6 +18,7 @@ export function NoticeForm({
   audiences: { value: NotifyAudience; label: string; hint: string; count: number }[];
 }) {
   const [audience, setAudience] = useState<NotifyAudience>('all');
+  const [picked, setPicked] = useState<Recipient[]>([]);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [link, setLink] = useState('');
@@ -26,11 +28,19 @@ export function NoticeForm({
   const [pending, start] = useTransition();
 
   const target = audiences.find((a) => a.value === audience);
+  // 직접 고르기는 미리 셀 수 없다. 고른 만큼이 대상이다.
+  const count = audience === 'custom' ? picked.length : (target?.count ?? 0);
 
   const send = () =>
     start(async () => {
       setError(null);
-      const r = await sendNoticeAction(audience, title, body, link);
+      const r = await sendNoticeAction(
+        audience,
+        title,
+        body,
+        link,
+        picked.map((p) => p.id),
+      );
       setConfirming(false);
       if (r.error) {
         setError(r.error);
@@ -40,6 +50,7 @@ export function NoticeForm({
       setTitle('');
       setBody('');
       setLink('');
+      setPicked([]);
     });
 
   return (
@@ -60,12 +71,17 @@ export function NoticeForm({
                 className="sr-only"
               />
               <b>
-                {a.label} <span className="pickopt-n">{a.count}명</span>
+                {a.label}{' '}
+                {a.value !== 'custom' && <span className="pickopt-n">{a.count}명</span>}
               </b>
               <span>{a.hint}</span>
             </label>
           ))}
         </div>
+
+        {audience === 'custom' && (
+          <RecipientPicker selected={picked} onChange={setPicked} />
+        )}
       </section>
 
       <section className="fgroup">
@@ -119,7 +135,10 @@ export function NoticeForm({
         {confirming ? (
           <div className="confirm-row">
             <p className="field-hint">
-              <b>{target?.label} {target?.count}명</b>에게 보냅니다. 되돌릴 수 없어요.
+              <b>
+                {target?.label} {count}명
+              </b>
+              에게 보냅니다. 되돌릴 수 없어요.
             </p>
             <div className="actionbar-row">
               <button
@@ -139,10 +158,10 @@ export function NoticeForm({
           <button
             type="button"
             className="btn btn--block"
-            disabled={!title.trim() || !body.trim() || (target?.count ?? 0) === 0}
+            disabled={!title.trim() || !body.trim() || count === 0}
             onClick={() => setConfirming(true)}
           >
-            {target?.count ?? 0}명에게 보내기
+            {count}명에게 보내기
           </button>
         )}
       </div>
