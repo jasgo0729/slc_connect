@@ -319,7 +319,10 @@ main.page {
 
 .ccard {
   position: relative; display: block; padding: 16px 18px;
-  border-radius: var(--r-lg); background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--r-lg); background: var(--card);
+  /* 캠퍼스를 테두리로 구분하므로 모든 카드가 같은 두께여야 한다.
+     일부만 두꺼우면 크기가 달라 목록이 들쭉날쭉해 보인다. */
+  border: 2px solid var(--line);
   transition: border-color .16s, transform .16s, box-shadow .16s;
 }
 .ccard:hover { border-color: var(--blue-soft); transform: translateY(-2px); box-shadow: var(--shadow-lift); }
@@ -1494,7 +1497,7 @@ a.admin-card:hover { border-color: var(--blue-soft); }
 
 .reco-card {
   display: block; padding: 16px 18px;
-  background: var(--card); border: 1px solid rgba(49, 82, 234, 0.18);
+  background: var(--card); border: 2px solid rgba(49, 82, 234, .22);
   border-radius: var(--r-lg);
   transition: border-color .16s, transform .16s, box-shadow .16s;
 }
@@ -1558,13 +1561,15 @@ a.admin-card:hover { border-color: var(--blue-soft); }
    같은 주제가 양 캠퍼스에 각각 열려 있어 이 둘을 가려내는 일이 잦다.
 
    배경은 건드리지 않는다. 카드가 색을 띠면 목록 전체가 알록달록해져
-   정작 상태 배지(모집 중·마감)가 묻힌다. */
+   정작 상태 배지(모집 중·마감)가 묻힌다.
+   대신 테두리를 2px로 두껍게 하고 색을 또렷하게 잡는다. */
 
-.ccard--science { border-color: #b9dbef; }
-.ccard--science:hover { border-color: #6db6dd; }
+.ccard--science { border-color: #7ec3e3; }
+.ccard--science:hover { border-color: #3f9fcc; }
 
-.ccard--humanities { border-color: #c5e2b6; }
-.ccard--humanities:hover { border-color: #8fca77; }
+.ccard--humanities { border-color: #a2d187; }
+.ccard--humanities:hover { border-color: #6bb14a; }
 
-/* 공통은 기본 회색 테두리를 그대로 쓴다. */
+/* 공통은 기본 회색 테두리를 그대로 쓴다. 색이 없는 것 자체가
+   '양 캠퍼스 어디든'이라는 표시가 된다. */
 .ccard--both:hover { border-color: var(--blue-soft); }
