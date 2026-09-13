@@ -43,6 +43,7 @@ export function ResultScreen({
   detail,
   children,
   actions,
+  extra,
 }: {
   tone: ResultTone;
   title: string;
@@ -51,6 +52,8 @@ export function ResultScreen({
   detail?: { label: string; text: string };
   children?: React.ReactNode;
   actions: { href: string; label: string; variant?: 'primary' | 'line' }[];
+  /** 버튼 아래에 붙는 것. 지금은 초대 링크 공유에 쓴다. */
+  extra?: React.ReactNode;
 }) {
   return (
     <main className="result">
@@ -80,6 +83,7 @@ export function ResultScreen({
             </Link>
           ))}
         </div>
+        {extra}
       </div>
     </main>
   );

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ConnectCard } from '@/components/connect-card';
 import type { ConnectCardData } from '@/components/connect-card';
+import { BoardNotes } from '@/components/board-notes';
 import { EmptyState } from '@/components/empty-state';
 import { LoginPrompt } from '@/components/login-prompt';
 import {
@@ -31,7 +32,8 @@ export function Board({
 }: {
   items: ConnectCardData[];
   loggedIn: boolean;
-  featured?: ConnectCardData;
+  /** 히어로 오른쪽 카드. 찜이 없으면 최신 커넥트가 온다. */
+  featured?: { c: ConnectCardData; label: string; fresh: boolean } | null;
   favoriteIds: string[];
 }) {
   const favs = new Set(favoriteIds);
@@ -91,7 +93,7 @@ export function Board({
             <Link href="/mbti" className="mbti-card">
               <p className="mbti-eyebrow">CONNECT MBTI</p>
               <p className="mbti-title">
-                내 성향에 맞는
+                성향으로 맞는
                 <br />
                 커넥트 찾기
               </p>
@@ -100,25 +102,21 @@ export function Board({
               </span>
             </Link>
 
+            {/* 찜이 가장 많은 커넥트. 모바일에서도 보인다 —
+                MBTI 카드 혼자 남으면 오른쪽이 통째로 빈다. */}
             {featured && (
-              <Link href={`/connects/${featured.id}`} className="pick-card">
-                <p className="pick-label">인기</p>
-                <p className="pick-name">{featured.name}</p>
+              <Link href={`/connects/${featured.c.id}`} className="pick-card">
+                <p className="pick-label" data-fresh={featured.fresh}>
+                  {featured.label}
+                </p>
+                <p className="pick-name">{featured.c.name}</p>
                 <p className="pick-meta">
-                  모집중 · {featured.memberCount}/{featured.capacity}명
+                  {featured.fresh
+                    ? `${featured.c.memberCount}/${featured.c.capacity}명 · 지금 신청받는 중`
+                    : `${featured.c.favoriteCount}명이 찜 · ${featured.c.memberCount}/${featured.c.capacity}명`}
                 </p>
               </Link>
             )}
-
-            {/* 키워드 입력을 없앴으므로 문구도 바뀐다.
-                누르면 바로 골라 주는 것이 지금 동작이다. */}
-            <Link href="/recommend" className="pick-card hero-card-hide-sm">
-              <p className="pick-label" style={{ color: 'var(--blue)' }}>
-                추천
-              </p>
-              <p className="pick-name">나에게 맞는 커넥트</p>
-              <p className="pick-meta">누르면 바로 3개를 골라 드려요</p>
-            </Link>
           </div>
         </div>
       </section>
@@ -234,6 +232,7 @@ export function Board({
             </div>
           )}
 
+          <BoardNotes />
         </div>
       </div>
 

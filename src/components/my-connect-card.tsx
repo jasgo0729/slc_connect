@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { StatusBadge, Badge } from './ui/badge';
 import { IconHeart } from './ui/icon';
 import { trackLabel } from '@/lib/connects/options';
+import { headcount } from '@/lib/connects/headcount';
 import type { MyConnect } from '@/lib/db/queries/me';
 
 /**
@@ -33,6 +34,7 @@ export function MyConnectCard({
   variant: 'favorite' | 'applied';
 }) {
   const my = c.myApplication ? MY_STATUS[c.myApplication] : undefined;
+  const head = headcount(c.memberCount, c.capacity);
 
   return (
     <article className={`ccard ccard--${CAMPUS_CLASS[c.campus] ?? "both"}`}>
@@ -60,8 +62,14 @@ export function MyConnectCard({
         ) : (
           <>
             <StatusBadge status={c.status} />
-            <span className="ccard-count">
-              <b>{c.memberCount}</b>/{c.capacity}
+            <span className="ccard-count" data-urgent={head.urgent} data-plain={!head.numeric}>
+              {head.numeric ? (
+                <>
+                  <b>{c.memberCount}</b>/{c.capacity}
+                </>
+              ) : (
+                head.text
+              )}
             </span>
           </>
         )}

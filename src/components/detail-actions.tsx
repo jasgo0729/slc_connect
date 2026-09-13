@@ -81,7 +81,9 @@ export function DetailActions({
             <span>남은 자리</span>
             <b>{open > 0 ? `${open}자리` : '없음'}</b>
           </div>
-          {favoriteCount !== undefined && (
+          {/* 찜이 적을 때 숫자를 보여주면 "1명이 찜했어요"가 되어
+              오히려 인기 없어 보인다. 다섯부터 말한다. */}
+          {favoriteCount !== undefined && favoriteCount >= 5 && (
             <p className="field-hint">{favoriteCount}명이 찜했어요</p>
           )}
         </div>

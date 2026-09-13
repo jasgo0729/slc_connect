@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { StatusBadge, Badge } from './ui/badge';
 import { FavoriteButton } from './favorite-button';
 import { trackLabel } from '@/lib/connects/options';
+import { headcount } from '@/lib/connects/headcount';
 
 /**
  * 커넥트 카드.
@@ -58,6 +59,8 @@ export function ConnectCard({
   loggedIn?: boolean;
   onBlocked?: () => void;
 }) {
+  const head = headcount(c.memberCount, c.capacity);
+
   return (
     <article className={`ccard ccard--${CAMPUS_CLASS[c.campus] ?? "both"}`}>
       <h3 className="ccard-name">
@@ -69,8 +72,16 @@ export function ConnectCard({
 
       <div className="ccard-foot">
         <StatusBadge status={c.status} />
-        <span className="ccard-count">
-          <b>{c.memberCount}</b>/{c.capacity}
+        {/* 4명 전까지는 숫자 대신 상태를 말한다. 0/6은 아무도 안 가는
+            팀으로 읽혀서, 그걸 본 사람이 미루면 실제로 미달이 된다. */}
+        <span className="ccard-count" data-urgent={head.urgent} data-plain={!head.numeric}>
+          {head.numeric ? (
+            <>
+              <b>{c.memberCount}</b>/{c.capacity}
+            </>
+          ) : (
+            head.text
+          )}
         </span>
         <Badge>{CAMPUS_SHORT[c.campus] ?? c.campus}</Badge>
         <Badge tone="track">{trackLabel(c.track)}</Badge>

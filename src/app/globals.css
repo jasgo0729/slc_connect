@@ -237,11 +237,17 @@ main.page {
   color: var(--danger);
   background: var(--danger-wash);
 }
+/* 아직 아무도 찜하지 않아 최신 커넥트를 대신 띄운 경우.
+   빨간 '인기' 칩을 그대로 쓰면 인기인 줄로 읽힌다. */
+.pick-label[data-fresh='true'] { color: var(--blue); background: var(--blue-wash); }
 .pick-name { margin-top: 8px; font-size: 16px; font-weight: 700; }
 .pick-meta { margin-top: 4px; font-size: 12px; color: var(--muted); }
 
-.hero-card-hide-sm { display: none; }
-@media (min-width: 900px) { .hero-card-hide-sm { display: block; } }
+/* 카드가 둘뿐이라 데스크탑에서도 나란히 둔다. 셋이던 시절의
+   'auto-fit' 은 카드를 과하게 넓혀 여백만 늘린다. */
+@media (min-width: 900px) {
+  .hero-cards { grid-template-columns: 1fr 1fr; max-width: 760px; }
+}
 
 /* =========================================================
    필터 줄
@@ -1627,3 +1633,23 @@ a.admin-card:hover { border-color: var(--blue-soft); }
   cursor: pointer;
 }
 .picker-chip:hover { background: #dfe7fd; }
+
+/* ── 초대 링크 공유 ───────────────────────────────────── */
+
+.share-box {
+  margin-top: 20px; padding: 16px 18px;
+  background: var(--blue-wash); border: 1px solid rgba(49, 82, 234, .16);
+  border-radius: var(--r-lg); text-align: center;
+}
+.share-text {
+  font-size: 13.5px; font-weight: 600; line-height: 1.6; color: var(--s700);
+}
+.share-box .btn { margin-top: 12px; }
+
+/* 인원 표기 — 숫자가 아닌 구간은 문장처럼 읽히게 */
+.ccard-count[data-plain='true'] {
+  font-size: 12.5px; font-weight: 600; color: var(--s500);
+}
+.ccard-count[data-urgent='true'] { color: var(--blue); }
+
+.invite-reopen { margin-top: 10px; text-align: center; }

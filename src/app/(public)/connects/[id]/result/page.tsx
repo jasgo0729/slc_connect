@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { ResultScreen } from '@/components/result-screen';
+import { ShareLink } from '@/components/share-link';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getConnectDetail } from '@/lib/db/queries/connect-detail';
 import { rejectLabel } from '@/lib/connects/reject-reasons';
@@ -62,6 +63,7 @@ export default async function ApplyResultPage({ params }: Props) {
         title="가입이 완료되었습니다!"
         body={chatOpenText(season[SEASON_KEYS.activityStart.key])}
         actions={[{ href: `/connects/${id}`, label: '확인' }]}
+        extra={<ShareLink connectId={id} connectName={c.name} />}
       />
     );
   }

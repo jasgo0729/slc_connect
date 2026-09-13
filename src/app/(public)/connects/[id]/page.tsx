@@ -5,6 +5,7 @@ import { Badge, StatusBadge } from '@/components/ui/badge';
 import { MemberList } from '@/components/member-list';
 import { ResidenceDist } from '@/components/residence-dist';
 import { InviteButton } from '@/components/invite-button';
+import { ShareLink } from '@/components/share-link';
 import { PreCreatedNotice } from '@/components/pre-created-notice';
 import { DetailActions } from '@/components/detail-actions';
 import { LeaveButton } from '@/components/leave-button';
@@ -96,7 +97,6 @@ export default async function ConnectDetailPage({ params }: Props) {
               </p>
             )}
 
-            {c.viewer.isLeader && <InviteButton token={c.inviteToken} />}
 
             {/* C-02 정성 목표. 신청 전에 무엇을 만드는 팀인지 알아야 한다. */}
             {c.track === 'qualitative' && c.goalDetail && (
@@ -140,6 +140,18 @@ export default async function ConnectDetailPage({ params }: Props) {
                 <h2 className="section-title">방학 중 거주지 분포</h2>
                 <ResidenceDist data={residence} />
               </section>
+            )}
+
+            {/* 주소창을 복사해 붙여넣는 일을 대신하는 편의 기능이라
+                참여 여부와 상관없이 누구에게나 보인다. */}
+            <ShareLink connectId={c.id} connectName={c.name} />
+
+            {/* 비공개 커넥트는 초대 링크가 사실상 유일한 입구다.
+                참여자가 그 링크를 다시 꺼낼 자리를 남겨 둔다. */}
+            {!c.isPublic && c.viewer.isMember && (
+              <div className="invite-reopen">
+                <InviteButton token={c.inviteToken} />
+              </div>
             )}
 
             {/* G-15 이탈. 참여 중인 사람에게만 보인다. */}
