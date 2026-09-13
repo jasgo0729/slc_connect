@@ -1240,7 +1240,7 @@ a.admin-card:hover { border-color: var(--blue-soft); }
 .atable { margin-top: 14px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--card); overflow: hidden; }
 .atable-head, .atable-row {
   display: grid; align-items: center; gap: 12px; padding: 12px 16px;
-  grid-template-columns: 1fr 6.5rem 3.5rem 3rem 6.5rem;
+  grid-template-columns: 1fr 6.5rem 3.5rem 3rem 3rem 6.5rem;
 }
 .atable-head {
   font-size: 11.5px; font-weight: 700; color: var(--muted);
@@ -1265,8 +1265,9 @@ a.admin-card:hover { border-color: var(--blue-soft); }
 
 @media (max-width: 720px) {
   .atable-head { display: none; }
-  .atable-row { grid-template-columns: 1fr auto; row-gap: 8px; }
+  .atable-row { grid-template-columns: repeat(4, auto) 1fr; row-gap: 10px; }
   .atable-main { grid-column: 1 / -1; }
+  .atable-cap { justify-self: end; }
 }
 
 .pickopt-n { font-weight: 500; color: var(--blue); margin-left: 4px; }
@@ -1653,3 +1654,15 @@ a.admin-card:hover { border-color: var(--blue-soft); }
 .ccard-count[data-urgent='true'] { color: var(--blue); }
 
 .invite-reopen { margin-top: 10px; text-align: center; }
+
+/* 관리자 표 — 정렬과 합계 */
+
+.atable-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px; margin-top: 16px;
+}
+.atable-bar .chip { cursor: pointer; }
+.atable-total { font-size: 12.5px; color: var(--muted); }
+
+/* 찜은 많은데 자리가 남은 곳. 초대를 한 번 더 돌리면 채워질 여지가 있다. */
+.atable-fav[data-hot='true'] { color: var(--danger); font-weight: 700; }

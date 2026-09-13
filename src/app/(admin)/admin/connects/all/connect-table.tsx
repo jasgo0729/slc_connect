@@ -18,10 +18,34 @@ const FILTERS = [
   { value: 'confirmed', label: '확정' },
 ];
 
+/**
+ * 정렬 기준.
+ *
+ * 찜이 많은데 인원이 안 차는 커넥트를 찾는 것이 이 화면의 쓸모다.
+ * 관심은 있는데 신청으로 이어지지 않은 곳이라, 초대 링크를 한 번
+ * 더 돌리라고 알리면 채워질 여지가 있다.
+ */
+const SORTS = [
+  { value: 'recent', label: '최신순' },
+  { value: 'favorite', label: '찜 많은 순' },
+  { value: 'short', label: '인원 적은 순' },
+] as const;
+
+type Sort = (typeof SORTS)[number]['value'];
+
 export function ConnectTable({ items, status }: { items: AdminConnect[]; status: string }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [sort, setSort] = useState<Sort>('recent');
   const [, start] = useTransition();
+
+  const sorted = [...items].sort((a, b) => {
+    if (sort === 'favorite') return b.favoriteCount - a.favoriteCount;
+    if (sort === 'short') return a.memberCount - b.memberCount;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  const totalFavorites = items.reduce((n, c) => n + c.favoriteCount, 0);
 
   const change = (c: AdminConnect, delta: number) =>
     start(async () => {
@@ -47,6 +71,25 @@ export function ConnectTable({ items, status }: { items: AdminConnect[]; status:
         ))}
       </div>
 
+      <div className="atable-bar">
+        <div className="chips">
+          {SORTS.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              className="chip"
+              aria-pressed={sort === o.value}
+              onClick={() => setSort(o.value)}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+        <span className="atable-total">
+          {items.length}개 · 찜 {totalFavorites}건
+        </span>
+      </div>
+
       {error && <Notice>{error}</Notice>}
 
       {items.length === 0 ? (
@@ -60,10 +103,11 @@ export function ConnectTable({ items, status }: { items: AdminConnect[]; status:
             <span>상태</span>
             <span>인원</span>
             <span>대기</span>
+            <span>찜</span>
             <span>정원</span>
           </div>
 
-          {items.map((c) => (
+          {sorted.map((c) => (
             <div key={c.id} className="atable-row">
               <div className="atable-main">
                 <Link href={`/connects/${c.id}`} className="atable-name">
@@ -84,6 +128,13 @@ export function ConnectTable({ items, status }: { items: AdminConnect[]; status:
                 {c.memberCount}/{c.capacity}
               </span>
               <span className="atable-n">{c.applicationCount || '—'}</span>
+              {/* 찜은 많은데 인원이 안 차는 곳을 눈에 띄게 한다. */}
+              <span
+                className="atable-n atable-fav"
+                data-hot={c.favoriteCount >= 5 && c.memberCount < c.capacity}
+              >
+                {c.favoriteCount || '—'}
+              </span>
 
               <span className="atable-cap">
                 <button
