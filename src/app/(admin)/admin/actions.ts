@@ -15,6 +15,7 @@ import { setSeasonValue } from '@/lib/db/queries/season';
 import { notifyCapacityChanged, notifyShortWarning } from '@/lib/notify/send';
 import { getConnectBrief } from '@/lib/db/queries/applications';
 import { getShortConnects } from '@/lib/db/queries/admin-ops';
+import { setUserRole } from '@/lib/db/queries/admin-users';
 
 /**
  * 운영 화면의 조작들.
@@ -132,4 +133,17 @@ export async function sendShortWarningsAction(): Promise<{ sent?: number; error?
   revalidatePath('/admin');
   revalidatePath('/admin/members');
   return { sent };
+}
+
+export async function setUserRoleAction(
+  userId: string,
+  role: 'member' | 'admin',
+): Promise<{ error?: string }> {
+  const a = await admin();
+  const r = await setUserRole(a.id, userId, role);
+  if (!r.ok) return { error: r.reason };
+
+  revalidatePath(`/admin/members/${userId}`);
+  revalidatePath('/admin/members/all');
+  return {};
 }
