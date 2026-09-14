@@ -110,7 +110,9 @@ export function ConnectTable({ items, status }: { items: AdminConnect[]; status:
           {sorted.map((c) => (
             <div key={c.id} className="atable-row">
               <div className="atable-main">
-                <Link href={`/connects/${c.id}`} className="atable-name">
+                {/* 운영 화면끼리 이어 둔다. 서비스 화면으로 나가면
+                    가린 이름만 보여 누가 있는지 알 수 없다. */}
+                <Link href={`/admin/connects/${c.id}`} className="atable-name">
                   {c.name}
                 </Link>
                 <span className="atable-sub">

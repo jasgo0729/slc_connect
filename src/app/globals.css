@@ -1666,3 +1666,33 @@ a.admin-card:hover { border-color: var(--blue-soft); }
 
 /* 찜은 많은데 자리가 남은 곳. 초대를 한 번 더 돌리면 채워질 여지가 있다. */
 .atable-fav[data-hot='true'] { color: var(--danger); font-weight: 700; }
+
+/* ── 관리자 가입자 목록 ───────────────────────────────── */
+
+.ufilters { margin-top: 16px; display: grid; gap: 10px; }
+.ufilter-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.ufilter-row .input { flex: 1; min-width: 9rem; }
+.ufilter-row .btn { flex: none; }
+
+.utable-head, .utable-row { grid-template-columns: 1fr 10rem 1fr 5rem; }
+a.utable-row { text-decoration: none; }
+a.utable-row:hover { background: var(--blue-wash); }
+
+.utable-tag {
+  margin-left: 6px; padding: 2px 6px; border-radius: 5px;
+  background: var(--navy-950); color: var(--s25);
+  font-size: 10px; font-weight: 700; vertical-align: middle;
+}
+
+.utable-connects { font-size: 12.5px; color: var(--s600); }
+.utable-connects[data-none='true'] { color: var(--muted); }
+
+@media (max-width: 720px) {
+  .utable-head { display: none; }
+  .utable-row { grid-template-columns: 1fr; row-gap: 4px; }
+}
+
+/* 신청자 한 건 — 지원서가 붙는 경우 */
+.applicant-row { display: block; }
+.applicant-head { display: flex; align-items: baseline; gap: 12px; }
+.applicant-head .audit-meta { margin-left: auto; }
