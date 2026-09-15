@@ -62,14 +62,9 @@ export function MyConnectCard({
         ) : (
           <>
             <StatusBadge status={c.status} />
-            <span className="ccard-count" data-urgent={head.urgent} data-plain={!head.numeric}>
-              {head.numeric ? (
-                <>
-                  <b>{c.memberCount}</b>/{c.capacity}
-                </>
-              ) : (
-                head.text
-              )}
+            <span className="ccard-count" data-urgent={head.urgent}>
+              <b>{head.memberCount}</b>/{head.capacity}
+              {head.suffix && <em className="ccard-hint">{head.suffix}</em>}
             </span>
           </>
         )}

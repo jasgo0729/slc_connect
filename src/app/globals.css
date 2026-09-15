@@ -1647,11 +1647,12 @@ a.admin-card:hover { border-color: var(--blue-soft); }
 }
 .share-box .btn { margin-top: 12px; }
 
-/* 인원 표기 — 숫자가 아닌 구간은 문장처럼 읽히게 */
-.ccard-count[data-plain='true'] {
-  font-size: 12.5px; font-weight: 600; color: var(--s500);
+/* 인원 표기 — 숫자 뒤에 붙는 짧은 말 */
+.ccard-count { display: inline-flex; align-items: baseline; gap: 5px; }
+.ccard-hint {
+  font-size: 11.5px; font-style: normal; font-weight: 600; color: var(--s400);
 }
-.ccard-count[data-urgent='true'] { color: var(--blue); }
+.ccard-count[data-urgent='true'] .ccard-hint { color: var(--blue); }
 
 .invite-reopen { margin-top: 10px; text-align: center; }
 

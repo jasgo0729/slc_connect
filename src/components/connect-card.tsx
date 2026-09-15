@@ -72,16 +72,11 @@ export function ConnectCard({
 
       <div className="ccard-foot">
         <StatusBadge status={c.status} />
-        {/* 4명 전까지는 숫자 대신 상태를 말한다. 0/6은 아무도 안 가는
-            팀으로 읽혀서, 그걸 본 사람이 미루면 실제로 미달이 된다. */}
-        <span className="ccard-count" data-urgent={head.urgent} data-plain={!head.numeric}>
-          {head.numeric ? (
-            <>
-              <b>{c.memberCount}</b>/{c.capacity}
-            </>
-          ) : (
-            head.text
-          )}
+        {/* 숫자는 항상 보여주고, 4명 전까지만 짧은 말을 덧붙인다.
+            숫자만 두면 0/6이 "아무도 안 가는 팀"으로 읽힌다. */}
+        <span className="ccard-count" data-urgent={head.urgent}>
+          <b>{head.memberCount}</b>/{head.capacity}
+          {head.suffix && <em className="ccard-hint">{head.suffix}</em>}
         </span>
         <Badge>{CAMPUS_SHORT[c.campus] ?? c.campus}</Badge>
         <Badge tone="track">{trackLabel(c.track)}</Badge>
