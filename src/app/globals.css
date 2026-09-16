@@ -365,6 +365,8 @@ main.page {
 .badge--open { color: var(--ok); background: var(--ok-wash); }
 .badge--review { color: var(--warn); background: var(--warn-wash); }
 .badge--closed { color: var(--s500); background: var(--s100); }
+/* 반려 — 고쳐서 다시 신청해야 하는 상태다. 마감과 달라 보여야 한다. */
+.badge--danger { color: var(--danger); background: var(--danger-wash); }
 .badge--neutral { color: var(--s500); background: var(--s50); font-weight: 500; }
 .badge--track { color: var(--blue); background: var(--blue-wash); }
 

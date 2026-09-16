@@ -105,7 +105,10 @@ export async function runRecommend(
     .map((p) => {
       const c = byId.get(p.connectId);
       if (!c) return null;
-      const status = STATUS[c.status] ?? STATUS.recruiting!;
+      // getCandidates 가 recruiting·early_closed 만 내므로 여기에
+      // 다른 상태가 올 수 없다. 그래도 모르는 값이 오면 '모집 중'으로
+      // 속이지 않는다 — 신청할 수 없는 것을 신청할 수 있게 보이면 안 된다.
+      const status = STATUS[c.status] ?? { label: c.status, tone: 'neutral' };
       return {
         id: c.id,
         name: c.name,
