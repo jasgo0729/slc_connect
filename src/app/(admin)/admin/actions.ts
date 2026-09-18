@@ -14,12 +14,21 @@ import {
 import { setSeasonValue } from '@/lib/db/queries/season';
 import { setUserRole } from '@/lib/db/queries/admin-users';
 import {
+  notifyAssigned,
   notifyCapacityChanged,
   notifyConnectDeleted,
+  notifyRemoved,
   notifyShortWarning,
 } from '@/lib/notify/send';
 import { getConnectBrief } from '@/lib/db/queries/applications';
 import { deleteConnect, getShortConnects } from '@/lib/db/queries/admin-ops';
+import {
+  ASSIGN_MESSAGES,
+  assignMember,
+  removeMember,
+  searchAssignable,
+  type AssignCandidate,
+} from '@/lib/db/queries/assign';
 
 /**
  * 운영 화면의 조작들.
@@ -185,4 +194,62 @@ export async function deleteConnectAction(
   revalidatePath('/admin/connects/all');
   revalidatePath('/connects');
   redirect('/admin/connects/all');
+}
+
+/* ── D-14 배정 ─────────────────────────────────────────── */
+
+export async function searchAssignableAction(
+  connectId: string,
+  query: string,
+): Promise<AssignCandidate[]> {
+  await admin();
+  return searchAssignable(connectId, query);
+}
+
+/**
+ * 커넥트에 사람을 넣는다.
+ *
+ * 같은 트랙의 다른 커넥트에 속해 있으면 한 번 막고, 화면이 확인을
+ * 받은 뒤 move=true 로 다시 부른다. 옮기는 것은 상대 팀의 인원도
+ * 줄이는 일이라 한 번은 물어야 한다.
+ */
+export async function assignMemberAction(
+  connectId: string,
+  userId: string,
+  move = false,
+): Promise<{ error?: string; conflictName?: string; moved?: string }> {
+  const a = await admin();
+  const r = await assignMember(a.id, connectId, userId, move);
+
+  if (!r.ok) {
+    if (r.reason === 'IN_OTHER_TRACK') {
+      return {
+        error: `이미 '${r.conflictName}'에 속해 있어요.`,
+        conflictName: r.conflictName,
+      };
+    }
+    return { error: ASSIGN_MESSAGES[r.reason] };
+  }
+
+  await notifyAssigned(userId, connectId, r.connectName, r.movedFrom);
+
+  revalidatePath(`/admin/connects/${connectId}`);
+  revalidatePath('/admin/members');
+  revalidatePath(`/connects/${connectId}`);
+  return { moved: r.movedFrom };
+}
+
+export async function removeMemberAction(
+  connectId: string,
+  userId: string,
+): Promise<{ error?: string }> {
+  const a = await admin();
+  const r = await removeMember(a.id, connectId, userId);
+  if (!r.ok) return { error: r.reason };
+
+  await notifyRemoved(userId, r.connectName);
+
+  revalidatePath(`/admin/connects/${connectId}`);
+  revalidatePath(`/connects/${connectId}`);
+  return {};
 }

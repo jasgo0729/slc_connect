@@ -5,6 +5,7 @@ import { IconArrowLeft } from '@/components/ui/icon';
 import { getConnectRoster } from '@/lib/db/queries/admin-users';
 import { getDeletePreview } from '@/lib/db/queries/admin-ops';
 import { DeleteConnect } from './delete-connect';
+import { AssignMember } from './assign-member';
 import { trackLabel, isExampleConnect } from '@/lib/connects/options';
 
 export const dynamic = 'force-dynamic';
@@ -143,6 +144,14 @@ export default async function AdminConnectPage({ params }: { params: Promise<{ i
           </section>
         </>
       )}
+      <h2 className="me-sectitle me-sectitle--gap">팀원 배정</h2>
+      <section className="card-block">
+        <AssignMember
+          connectId={id}
+          members={c.members.map((m) => ({ userId: m.userId, name: m.name, role: m.role }))}
+        />
+      </section>
+
       <h2 className="me-sectitle me-sectitle--gap">관리</h2>
 
       {/* 지우기 전에 고치는 쪽을 먼저 보여준다. 대부분의 문제는

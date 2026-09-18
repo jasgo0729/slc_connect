@@ -1719,3 +1719,15 @@ a.utable-row:hover { background: var(--blue-wash); }
 .danger-list b { color: var(--danger); }
 
 .danger-edit { display: block; width: 100%; margin-top: 10px; font-size: 12.5px; }
+
+/* ── 팀원 배정 ────────────────────────────────────────── */
+
+.assign-current { margin-top: 16px; }
+.assign-current .field-hint { margin-bottom: 8px; }
+.picker-chip .chip-x {
+  display: inline-grid; place-items: center;
+  margin-left: 2px; padding: 0; border: 0; background: none;
+  color: inherit; cursor: pointer; opacity: .6;
+}
+.picker-chip .chip-x:hover { opacity: 1; }
+.picker-chip { cursor: default; }

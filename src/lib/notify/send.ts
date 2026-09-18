@@ -3,6 +3,8 @@ import { after } from 'next/server';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { favorites, memberships, notifications } from '@/lib/db/schema';
+// import { emailEnabled, sendEmail } from './email';
+// import { pushEnabled, sendPush } from './push';
 
 /**
  * 알림 발송 (H절).
@@ -29,6 +31,8 @@ export type NotifyType =
   | 'favorite_closing' // 찜한 커넥트의 자리가 얼마 안 남음
   | 'short_warning' // 인원 미달 경고 (D-10)
   | 'connect_deleted' // 참여하던 커넥트가 사라졌다
+  | 'assigned' // 운영진이 커넥트에 배정했다
+  | 'removed' // 운영진이 커넥트에서 뺐다
   | 'season_confirmed'
   | 'notice';
 
@@ -393,4 +397,46 @@ export async function notifyConnectDeleted(
       link: '/connects',
     })),
   );
+}
+
+/* ── D-14 관리자 배정 ──────────────────────────────────── */
+
+/**
+ * 배정됐음을 알린다.
+ *
+ * 본인이 신청한 것이 아니므로 모르고 지나갈 수 있다. 옮겨진
+ * 경우에는 어디서 어디로인지까지 말해야 납득이 된다.
+ */
+export async function notifyAssigned(
+  userId: string,
+  connectId: string,
+  connectName: string,
+  movedFrom?: string,
+): Promise<void> {
+  await push([
+    {
+      userId,
+      type: 'assigned',
+      title: movedFrom ? '커넥트가 바뀌었어요' : '커넥트에 배정됐어요',
+      body: movedFrom
+        ? `'${movedFrom}'이(가) 해산되어 '${connectName}'으로 옮겨 드렸어요.`
+        : `운영진이 '${connectName}'에 배정했어요. 어떤 팀인지 확인해 주세요.`,
+      link: `/connects/${connectId}`,
+    },
+  ]);
+}
+
+export async function notifyRemoved(
+  userId: string,
+  connectName: string,
+): Promise<void> {
+  await push([
+    {
+      userId,
+      type: 'removed',
+      title: '커넥트에서 나오게 됐어요',
+      body: `'${connectName}'에서 빠졌어요. 씨앗판에서 다른 커넥트를 골라 주세요.`,
+      link: '/connects',
+    },
+  ]);
 }
