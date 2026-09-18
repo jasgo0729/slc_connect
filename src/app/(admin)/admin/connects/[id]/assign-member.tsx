@@ -2,8 +2,13 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { Notice } from '@/components/ui/notice';
-import { IconClose, IconUser } from '@/components/ui/icon';
-import { assignMemberAction, removeMemberAction, searchAssignableAction } from '../../actions';
+import { IconUser } from '@/components/ui/icon';
+import {
+  assignMemberAction,
+  removeMemberAction,
+  searchAssignableAction,
+  setLeaderAction,
+} from '../../actions';
 import type { AssignCandidate } from '@/lib/db/queries/assign';
 
 /**
@@ -73,6 +78,15 @@ export function AssignMember({
       const r = await removeMemberAction(connectId, userId);
       if (r.error) setError(r.error);
       else setDone(`${name}님을 뺐어요.`);
+    });
+
+  const makeLeader = (userId: string, name: string) =>
+    start(async () => {
+      setError(null);
+      setDone(null);
+      const r = await setLeaderAction(connectId, userId);
+      if (r.error) setError(r.error);
+      else setDone(`${name}님을 팀장으로 지정했어요.`);
     });
 
   return (
@@ -147,27 +161,53 @@ export function AssignMember({
         </div>
       )}
 
-      {members.length > 0 && (
+      {members.length > 0 ? (
         <div className="assign-current">
-          <p className="field-hint">현재 팀원</p>
-          <div className="chips">
-            {members.map((m) => (
-              <span key={m.userId} className="chip picker-chip">
-                {m.name}
-                {m.role === 'leader' && ' (팀장)'}
-                <button
-                  type="button"
-                  className="chip-x"
-                  aria-label={`${m.name} 빼기`}
-                  disabled={pending}
-                  onClick={() => remove(m.userId, m.name)}
-                >
-                  <IconClose size={12} />
-                </button>
-              </span>
-            ))}
-          </div>
+          <p className="field-hint">
+            현재 팀원 {members.length}명
+            {!members.some((m) => m.role === 'leader') && ' · 팀장이 없어요'}
+          </p>
+
+          <ul className="assign-list">
+            {members.map((m) => {
+              const isLeader = m.role === 'leader';
+              return (
+                <li key={m.userId}>
+                  <IconUser size={15} />
+                  <span className="assign-name">{m.name}</span>
+                  {isLeader && <span className="assign-badge">팀장</span>}
+
+                  <span className="assign-actions">
+                    {/* 팀장에게는 지정 버튼을 두지 않는다. 이미 팀장이다. */}
+                    {!isLeader && (
+                      <button
+                        type="button"
+                        className="textbtn"
+                        disabled={pending}
+                        onClick={() => makeLeader(m.userId, m.name)}
+                      >
+                        팀장으로
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="textbtn assign-remove"
+                      disabled={pending}
+                      onClick={() => remove(m.userId, m.name)}
+                    >
+                      빼기
+                    </button>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
         </div>
+      ) : (
+        <p className="field-hint" style={{ marginTop: 16 }}>
+          아직 팀원이 없어요. 사전 개설 커넥트는 팀장 없이 시작하니, 사람을 넣은 뒤
+          팀장을 정해 주세요.
+        </p>
       )}
     </div>
   );

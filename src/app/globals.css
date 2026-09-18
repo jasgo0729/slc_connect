@@ -1731,3 +1731,21 @@ a.utable-row:hover { background: var(--blue-wash); }
 }
 .picker-chip .chip-x:hover { opacity: 1; }
 .picker-chip { cursor: default; }
+
+/* 현재 팀원 — 칩으로는 동작 두 개를 담기 어렵다 */
+.assign-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.assign-list li {
+  display: flex; align-items: center; gap: 9px;
+  padding: 11px 2px; border-bottom: 1px solid var(--line);
+}
+.assign-list li:last-child { border-bottom: 0; }
+.assign-list svg { color: var(--s300); flex: none; }
+.assign-name { font-size: 14px; font-weight: 600; color: var(--s800); }
+.assign-badge {
+  padding: 2px 8px; border-radius: 100px;
+  background: var(--blue-wash); color: var(--blue);
+  font-size: 11px; font-weight: 700;
+}
+.assign-actions { margin-left: auto; display: flex; gap: 4px; }
+.assign-actions .textbtn { padding: 4px 8px; font-size: 12.5px; }
+.assign-remove { color: var(--danger); }

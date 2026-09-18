@@ -330,3 +330,91 @@ export async function searchAssignable(
 
   return rows.filter((r) => !inHere.has(r.userId));
 }
+
+/* ── 팀장 지정 ─────────────────────────────────────────── */
+
+/**
+ * 관리자가 팀장을 정한다.
+ *
+ * 사전 개설 커넥트는 팀장 없이 시작하므로 누군가는 정해야 한다.
+ * 첫 만남에서 자율적으로 정하는 것이 원칙이지만(6.3), 그 전에
+ * 연락을 받을 사람이 필요하거나 팀장이 이탈해 빈 경우가 생긴다.
+ *
+ * memberships 에 커넥트당 팀장 하나라는 부분 유니크 인덱스가 걸려
+ * 있다. 새 팀장을 먼저 올리면 그 인덱스에 막히므로, 기존 팀장을
+ * 내리는 것이 먼저다.
+ */
+export type LeaderResult =
+  | { ok: true; name: string; previousUserId: string | null }
+  | { ok: false; reason: string };
+
+export async function setLeader(
+  adminId: string,
+  connectId: string,
+  userId: string,
+): Promise<LeaderResult> {
+  return db.transaction(async (tx) => {
+    const rows = await tx
+      .select()
+      .from(connects)
+      .where(eq(connects.id, connectId))
+      .for('update')
+      .limit(1);
+
+    const c = rows[0];
+    if (!c) return { ok: false, reason: '커넥트를 찾을 수 없어요.' } as const;
+    if (c.status === 'confirmed' || c.confirmedAt) {
+      return { ok: false, reason: '확정된 팀은 구성을 바꿀 수 없어요.' } as const;
+    }
+
+    const target = await tx
+      .select({ id: memberships.id, role: memberships.role })
+      .from(memberships)
+      .where(
+        and(
+          eq(memberships.connectId, connectId),
+          eq(memberships.userId, userId),
+          isNull(memberships.leftAt),
+        ),
+      )
+      .limit(1);
+
+    if (target.length === 0) {
+      return { ok: false, reason: '이 커넥트의 팀원이 아니에요.' } as const;
+    }
+    if (target[0]!.role === 'leader') {
+      return { ok: false, reason: '이미 팀장이에요.' } as const;
+    }
+
+    const current = await tx
+      .select({ id: memberships.id, userId: memberships.userId })
+      .from(memberships)
+      .where(
+        and(
+          eq(memberships.connectId, connectId),
+          eq(memberships.role, 'leader'),
+          isNull(memberships.leftAt),
+        ),
+      )
+      .limit(1);
+
+    // 순서가 중요하다. 새 팀장을 먼저 올리면 유니크 인덱스에 걸린다.
+    if (current[0]) {
+      await tx
+        .update(memberships)
+        .set({ role: 'member' })
+        .where(eq(memberships.id, current[0].id));
+    }
+
+    await tx.update(memberships).set({ role: 'leader' }).where(eq(memberships.id, target[0]!.id));
+
+    await tx.insert(adminAuditLog).values({
+      actorId: adminId,
+      action: 'member.set_leader',
+      target: connectId,
+      detail: { userId, connectName: c.name, previous: current[0]?.userId ?? null },
+    });
+
+    return { ok: true, name: c.name, previousUserId: current[0]?.userId ?? null } as const;
+  });
+}

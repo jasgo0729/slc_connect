@@ -33,6 +33,7 @@ export type NotifyType =
   | 'connect_deleted' // 참여하던 커넥트가 사라졌다
   | 'assigned' // 운영진이 커넥트에 배정했다
   | 'removed' // 운영진이 커넥트에서 뺐다
+  | 'leader_changed' // 팀장이 바뀌었다
   | 'season_confirmed'
   | 'notice';
 
@@ -439,4 +440,39 @@ export async function notifyRemoved(
       link: '/connects',
     },
   ]);
+}
+
+/**
+ * 팀장이 바뀌었음을 알린다.
+ *
+ * 새 팀장에게는 무엇을 해야 하는지까지 알려야 한다. 역할만 받고
+ * 할 일을 모르면 승인 대기가 그대로 쌓인다.
+ */
+export async function notifyLeaderChanged(
+  newLeaderId: string,
+  previousLeaderId: string | null,
+  connectId: string,
+  connectName: string,
+): Promise<void> {
+  const rows: Payload[] = [
+    {
+      userId: newLeaderId,
+      type: 'leader_changed',
+      title: '팀장이 되셨어요',
+      body: `'${connectName}'의 팀장으로 지정됐어요. 신청을 확인하고 초대 링크를 공유해 주세요.`,
+      link: `/connects/${connectId}/manage`,
+    },
+  ];
+
+  if (previousLeaderId && previousLeaderId !== newLeaderId) {
+    rows.push({
+      userId: previousLeaderId,
+      type: 'leader_changed',
+      title: '팀장 자리가 넘어갔어요',
+      body: `'${connectName}'의 팀장이 다른 분으로 바뀌었어요. 참여는 그대로예요.`,
+      link: `/connects/${connectId}`,
+    });
+  }
+
+  await push(rows);
 }

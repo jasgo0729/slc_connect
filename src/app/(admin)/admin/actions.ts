@@ -17,6 +17,7 @@ import {
   notifyAssigned,
   notifyCapacityChanged,
   notifyConnectDeleted,
+  notifyLeaderChanged,
   notifyRemoved,
   notifyShortWarning,
 } from '@/lib/notify/send';
@@ -27,6 +28,7 @@ import {
   assignMember,
   removeMember,
   searchAssignable,
+  setLeader,
   type AssignCandidate,
 } from '@/lib/db/queries/assign';
 
@@ -248,6 +250,27 @@ export async function removeMemberAction(
   if (!r.ok) return { error: r.reason };
 
   await notifyRemoved(userId, r.connectName);
+
+  revalidatePath(`/admin/connects/${connectId}`);
+  revalidatePath(`/connects/${connectId}`);
+  return {};
+}
+
+/**
+ * 팀장 지정.
+ *
+ * 사전 개설 커넥트는 팀장 없이 시작하고, 팀장이 이탈해 비는
+ * 경우도 있다. 그때 연락을 받을 사람을 정해야 한다.
+ */
+export async function setLeaderAction(
+  connectId: string,
+  userId: string,
+): Promise<{ error?: string }> {
+  const a = await admin();
+  const r = await setLeader(a.id, connectId, userId);
+  if (!r.ok) return { error: r.reason };
+
+  await notifyLeaderChanged(userId, r.previousUserId, connectId, r.name);
 
   revalidatePath(`/admin/connects/${connectId}`);
   revalidatePath(`/connects/${connectId}`);
