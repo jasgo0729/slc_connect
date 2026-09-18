@@ -80,7 +80,10 @@ export async function submitEdit(
 
   if (Object.keys(errors).length > 0) return { errors };
 
-  const r = await updateConnect(user.id, connectId, {
+  const r = await updateConnect(
+    user.id,
+    connectId,
+    {
     name,
     tagline,
     description,
@@ -94,8 +97,10 @@ export async function submitEdit(
     goalType,
     goalDetail,
     goalDate,
-    activityPeriod,
-  });
+      activityPeriod,
+    },
+    user.role === 'admin',
+  );
 
   if (!r.ok) {
     return {

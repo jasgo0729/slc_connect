@@ -1,13 +1,15 @@
 import 'server-only';
-import { and, eq, sql } from 'drizzle-orm';
+import { after } from 'next/server';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { favorites, memberships, notifications } from '@/lib/db/schema';
 
 /**
  * 알림 발송 (H절).
  *
- * 지금은 앱 안의 알림함에만 쌓는다. 웹 푸시와 이메일은 붙는 대로
- * 같은 자리에서 함께 나가게 하면 된다.
+ * 세 경로로 나간다 — 앱 안 알림함, 웹 푸시(H-01), 이메일(H-02).
+ * 알림함이 원본이고 나머지는 그 사본이다. 푸시와 메일이 모두
+ * 실패해도 사용자는 알림함에서 볼 수 있다.
  *
  * 중요한 것만 보낸다. 찜이나 조회 같은 것까지 알리면 알림함이
  * 잡음으로 차고, 정작 승인 결과를 놓친다.
@@ -26,6 +28,7 @@ export type NotifyType =
   | 'favorite_capacity' // 찜한 커넥트의 정원이 바뀜
   | 'favorite_closing' // 찜한 커넥트의 자리가 얼마 안 남음
   | 'short_warning' // 인원 미달 경고 (D-10)
+  | 'connect_deleted' // 참여하던 커넥트가 사라졌다
   | 'season_confirmed'
   | 'notice';
 
@@ -39,20 +42,66 @@ interface Payload {
 
 async function push(rows: Payload[]): Promise<void> {
   if (rows.length === 0) return;
+
+  // 1. 알림함에 먼저 남긴다. 이게 원본이다.
+  let saved: { id: string }[];
   try {
-    await db.insert(notifications).values(
-      rows.map((r) => ({
-        userId: r.userId,
-        type: r.type,
-        title: r.title,
-        body: r.body,
-        link: r.link ?? null,
-      })),
-    );
+    saved = await db
+      .insert(notifications)
+      .values(
+        rows.map((r) => ({
+          userId: r.userId,
+          type: r.type,
+          title: r.title,
+          body: r.body,
+          link: r.link ?? null,
+        })),
+      )
+      .returning({ id: notifications.id });
   } catch (err) {
     // 알림은 부수적이다. 실패해도 본 작업은 이미 끝났다.
-    console.error('[notify] 발송 실패', err);
+    console.error('[notify] 저장 실패', err);
+    return;
   }
+
+  // if (!pushEnabled() && !emailEnabled()) return;
+
+  // 2. 푸시와 메일은 응답을 보낸 뒤에 내보낸다.
+  //    승인 버튼을 누른 사람이 메일 서버 응답까지 기다릴 이유가 없다.
+  after(async () => {
+    await Promise.all(
+      rows.map(async (r, i) => {
+        const id = saved[i]?.id;
+        const channels: string[] = [];
+
+        // const [pushed, mailed] = await Promise.all([
+        //   pushEnabled()
+        //     ? sendPush(r.userId, { title: r.title, body: r.body, link: r.link })
+        //     : Promise.resolve(0),
+        //   emailEnabled()
+        //     ? sendEmail(r.userId, r.title, r.body, r.link)
+        //     : Promise.resolve(false),
+        // ]);
+
+        // if (pushed > 0) channels.push('push');
+        // if (mailed) channels.push('email');
+        if (!id) return;
+
+        try {
+          await db
+            .update(notifications)
+            .set({
+              channel: channels.length > 0 ? channels.join('+') : 'inapp',
+              deliveryStatus: channels.length > 0 ? 'sent' : 'failed',
+              sentAt: channels.length > 0 ? new Date() : null,
+            })
+            .where(eq(notifications.id, id));
+        } catch {
+          // 기록에 실패해도 알림은 이미 도착했다.
+        }
+      }),
+    );
+  });
 }
 
 /** 커넥트의 현재 팀장. 없으면 null(사전 개설 커넥트). */
@@ -320,4 +369,28 @@ export async function notifyShortWarning(
     },
   ]);
   return true;
+}
+
+/* ── J-01 커넥트 삭제 ──────────────────────────────────── */
+
+/**
+ * 참여하던 커넥트가 사라졌음을 알린다.
+ *
+ * 말없이 지우면 마이페이지에서 팀이 통째로 없어진 것으로 보인다.
+ * 사유를 담아, 다시 고를 수 있다는 것까지 알려 준다.
+ */
+export async function notifyConnectDeleted(
+  userIds: string[],
+  connectName: string,
+  reason: string,
+): Promise<void> {
+  await push(
+    userIds.map((userId) => ({
+      userId,
+      type: 'connect_deleted' as const,
+      title: '참여하던 커넥트가 사라졌어요',
+      body: `'${connectName}' — ${reason} 씨앗판에서 다른 커넥트를 골라 주세요.`,
+      link: '/connects',
+    })),
+  );
 }

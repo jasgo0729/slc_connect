@@ -2,6 +2,25 @@ import { and, asc, eq, sql } from 'drizzle-orm';
 import { db } from '../client';
 import { applications, connects, memberships, roster, users } from '../schema';
 import { isExampleConnect } from '@/lib/connects/options';
+import { isRecruitClosed } from '@/lib/connects/deadline';
+import { seasonConfig } from '../schema';
+
+/**
+ * 모집 마감일을 트랜잭션 안에서 읽는다.
+ *
+ * 밖에서 읽어 넘기면, 마감 직전에 관리자가 날짜를 바꾸는 동안
+ * 들어온 신청이 옛 값으로 판정될 수 있다.
+ */
+async function readRecruitDeadline(tx: {
+  select: typeof db.select;
+}): Promise<string | undefined> {
+  const rows = await tx
+    .select({ value: seasonConfig.value })
+    .from(seasonConfig)
+    .where(eq(seasonConfig.key, 'recruit_deadline'))
+    .limit(1);
+  return rows[0]?.value;
+}
 
 /**
  * D-01·D-02·D-03·D-04·D-06·D-12 신청과 승인.
@@ -24,6 +43,7 @@ export type ApplyBlock =
   | 'ALREADY_APPLIED'
   | 'ALREADY_IN_TRACK' // 같은 트랙의 다른 커넥트에 이미 속해 있다
   | 'EXAMPLE' // 보여주려고 올려 둔 예시라 신청을 받지 않는다
+  | 'DEADLINE_PASSED' // 모집 기간이 끝났다
   | 'FULL';
 
 export const APPLY_MESSAGES: Record<ApplyBlock, string> = {
@@ -34,6 +54,7 @@ export const APPLY_MESSAGES: Record<ApplyBlock, string> = {
   ALREADY_APPLIED: '이미 신청했어요. 팀장이 확인하면 알려드릴게요.',
   ALREADY_IN_TRACK: '',  // 트랙 이름이 들어가야 해서 호출하는 쪽에서 만든다
   EXAMPLE: '도전 트랙이 어떤 모습인지 보여드리려고 올려 둔 예시예요. 같은 커넥트를 직접 만들어 보세요.',
+  DEADLINE_PASSED: '모집이 마감됐어요. 다음 시즌에 만나요.',
   FULL: '자리가 모두 찼어요.',
 };
 
@@ -68,6 +89,13 @@ export async function applyToConnect(
     }
     if (c.status === 'pending_review') {
       return { ok: false, reason: 'PENDING_REVIEW' } as const;
+    }
+
+    // 모집 기간이 끝나면 더 받지 않는다. 화면에서도 막지만 서버
+    // 액션은 폼을 거치지 않고 부를 수 있으므로 여기가 방어선이다.
+    // 잠금 안에서 확인해 마감 직전 동시 신청도 같은 기준으로 갈린다.
+    if (isRecruitClosed(await readRecruitDeadline(tx))) {
+      return { ok: false, reason: 'DEADLINE_PASSED' } as const;
     }
     // 예시 커넥트는 신청을 받지 않는다. 화면에서도 막지만 서버 액션은
     // 폼을 거치지 않고 부를 수 있으므로 여기가 실제 방어선이다.

@@ -20,6 +20,9 @@ export async function updateConnect(
   userId: string,
   connectId: string,
   input: UpdateInput,
+  /** 관리자는 팀장이 아니어도 고칠 수 있다. 오탈자나 부적절한 표현을
+   *  발견했을 때 개설자를 기다릴 수 없는 경우가 있다. */
+  asAdmin = false,
 ): Promise<UpdateResult> {
   return db.transaction(async (tx) => {
     const rows = await tx
@@ -44,10 +47,13 @@ export async function updateConnect(
         ),
       )
       .limit(1);
-    if (leader.length === 0) return { ok: false, reason: 'NOT_LEADER' } as const;
+    if (leader.length === 0 && !asAdmin) {
+      return { ok: false, reason: 'NOT_LEADER' } as const;
+    }
 
     // 확정된 팀은 손댈 수 없다. 점수와 상금이 걸린 구성이다.
-    if (c.status === 'confirmed' || c.confirmedAt) {
+    // 관리자는 예외 — 확정 뒤에도 오기를 고칠 수 있어야 한다.
+    if (!asAdmin && (c.status === 'confirmed' || c.confirmedAt)) {
       return { ok: false, reason: 'LOCKED' } as const;
     }
 

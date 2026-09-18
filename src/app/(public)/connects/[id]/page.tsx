@@ -14,6 +14,8 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { getConnectDetail, summarizeResidence } from '@/lib/db/queries/connect-detail';
 import { countFavorites, getFavoriteIds } from '@/lib/db/queries/favorites';
 import { CONDITIONS, DAYS, GOAL_TYPES, isExampleConnect, trackLabel } from '@/lib/connects/options';
+import { SEASON_KEYS, getSeasonConfig } from '@/lib/db/queries/season';
+import { isRecruitClosed } from '@/lib/connects/deadline';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +55,8 @@ export default async function ConnectDetailPage({ params }: Props) {
   // 초대가 성립하므로, 여기서는 막지 않는다.
 
   const isExample = isExampleConnect(c);
+  const season = await getSeasonConfig();
+  const recruitClosed = isRecruitClosed(season[SEASON_KEYS.recruitDeadline.key]);
   const residence = summarizeResidence(c.members);
   const days = c.availableDays.map((d) => DAYS[d]).filter(Boolean);
   const conditionLabels = c.conditions
@@ -183,6 +187,7 @@ export default async function ConnectDetailPage({ params }: Props) {
             track={c.track}
             viewer={c.viewer}
             isExample={isExample}
+            recruitClosed={recruitClosed}
             favorited={favIds.has(c.id)}
             loggedIn
             favoriteCount={favoriteCount}

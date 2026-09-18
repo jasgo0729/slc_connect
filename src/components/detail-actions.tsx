@@ -27,6 +27,7 @@ export function DetailActions({
   loggedIn,
   favoriteCount,
   isExample = false,
+  recruitClosed = false,
 }: {
   connectId: string;
   capacity: number;
@@ -43,6 +44,8 @@ export function DetailActions({
   loggedIn: boolean;
   /** 보여주기용 예시 커넥트. 신청을 받지 않는다. */
   isExample?: boolean;
+  /** 모집 기간이 끝났다. */
+  recruitClosed?: boolean;
   /** U-06 — 정확한 찜 수는 팀장에게만 넘어온다. */
   favoriteCount?: number;
 }) {
@@ -139,12 +142,15 @@ export function DetailActions({
     );
   } else {
     const blocked =
+      recruitClosed ||
       isExample ||
       status === 'confirmed' ||
       status === 'pending_review' ||
       (open === 0 && status !== 'early_closed');
 
-    const label = isExample
+    const label = recruitClosed
+      ? '모집이 마감됐어요'
+      : isExample
       ? '예시라 신청할 수 없어요'
       : status === 'confirmed'
         ? '모집이 끝났어요'
@@ -171,7 +177,9 @@ export function DetailActions({
     );
   }
 
-  const note = isExample
+  const note = recruitClosed
+    ? '모집 기간이 끝났어요. 다음 시즌에 만나요.'
+    : isExample
     ? '도전 트랙이 어떤 모습인지 보여드리는 예시예요. 같은 커넥트를 직접 만들어 보세요.'
     : viewer.application === 'pending'
       ? '팀장이 확인하면 알림으로 알려드려요.'

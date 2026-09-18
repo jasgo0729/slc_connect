@@ -4,6 +4,7 @@ import {
   adminAuditLog,
   applications,
   connects,
+  favorites,
   memberships,
   notifications,
   roster,
@@ -536,4 +537,93 @@ export async function getRecentAudit(limit = 20) {
     .innerJoin(roster, eq(users.studentNo, roster.studentNo))
     .orderBy(desc(adminAuditLog.createdAt))
     .limit(limit);
+}
+
+/* =========================================================
+   커넥트 삭제 (J-01)
+   ========================================================= */
+
+export interface DeletePreview {
+  name: string;
+  memberCount: number;
+  pendingCount: number;
+  favoriteCount: number;
+  /** 알림을 받을 사람. 참여자와 대기 중인 신청자. */
+  affected: string[];
+}
+
+/**
+ * 지우기 전에 누가 영향을 받는지 본다.
+ *
+ * applications·memberships·favorites 가 모두 ON DELETE CASCADE 라
+ * 커넥트를 지우면 소리 없이 함께 사라진다. 참여자에게는 자기 팀이
+ * 그냥 없어지는 것이라, 무엇이 지워지는지 먼저 보여줘야 한다.
+ */
+export async function getDeletePreview(connectId: string): Promise<DeletePreview | null> {
+  const rows = await db
+    .select({ name: connects.name })
+    .from(connects)
+    .where(eq(connects.id, connectId))
+    .limit(1);
+  if (rows.length === 0) return null;
+
+  const [mem, pend, fav] = await Promise.all([
+    db
+      .select({ userId: memberships.userId })
+      .from(memberships)
+      .where(and(eq(memberships.connectId, connectId), sql`${memberships.leftAt} IS NULL`)),
+    db
+      .select({ userId: applications.userId })
+      .from(applications)
+      .where(and(eq(applications.connectId, connectId), eq(applications.status, 'pending'))),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(favorites)
+      .where(eq(favorites.connectId, connectId)),
+  ]);
+
+  return {
+    name: rows[0]!.name,
+    memberCount: mem.length,
+    pendingCount: pend.length,
+    favoriteCount: fav[0]?.n ?? 0,
+    affected: [...new Set([...mem.map((m) => m.userId), ...pend.map((p) => p.userId)])],
+  };
+}
+
+/**
+ * 커넥트를 지운다.
+ *
+ * 되돌릴 수 없다. 하위 행은 외래키가 정리하지만, 그래서 더
+ * 조용히 사라진다 — 무엇을 지웠는지 감사 로그에 남긴다.
+ *
+ * @returns 알림을 보낼 대상. 삭제 후 부르는 쪽에서 보낸다.
+ */
+export async function deleteConnect(
+  adminId: string,
+  connectId: string,
+  reason: string,
+): Promise<{ ok: true; name: string; affected: string[] } | { ok: false }> {
+  const preview = await getDeletePreview(connectId);
+  if (!preview) return { ok: false };
+
+  await db.transaction(async (tx) => {
+    await tx.insert(adminAuditLog).values({
+      actorId: adminId,
+      action: 'connect.delete',
+      target: connectId,
+      detail: {
+        name: preview.name,
+        members: preview.memberCount,
+        pending: preview.pendingCount,
+        favorites: preview.favoriteCount,
+        reason,
+      },
+    });
+
+    // 하위 행은 ON DELETE CASCADE 로 함께 사라진다.
+    await tx.delete(connects).where(eq(connects.id, connectId));
+  });
+
+  return { ok: true, name: preview.name, affected: preview.affected };
 }

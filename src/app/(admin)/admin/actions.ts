@@ -12,10 +12,14 @@ import {
   type Recipient,
 } from '@/lib/db/queries/admin-ops';
 import { setSeasonValue } from '@/lib/db/queries/season';
-import { notifyCapacityChanged, notifyShortWarning } from '@/lib/notify/send';
-import { getConnectBrief } from '@/lib/db/queries/applications';
-import { getShortConnects } from '@/lib/db/queries/admin-ops';
 import { setUserRole } from '@/lib/db/queries/admin-users';
+import {
+  notifyCapacityChanged,
+  notifyConnectDeleted,
+  notifyShortWarning,
+} from '@/lib/notify/send';
+import { getConnectBrief } from '@/lib/db/queries/applications';
+import { deleteConnect, getShortConnects } from '@/lib/db/queries/admin-ops';
 
 /**
  * 운영 화면의 조작들.
@@ -135,6 +139,12 @@ export async function sendShortWarningsAction(): Promise<{ sent?: number; error?
   return { sent };
 }
 
+/**
+ * A-08 관리자 권한 변경.
+ *
+ * 화면에서 버튼을 감추더라도 여기서 권한을 다시 본다.
+ * 권한을 주는 조작 자체가 권한을 요구한다.
+ */
 export async function setUserRoleAction(
   userId: string,
   role: 'member' | 'admin',
@@ -146,4 +156,33 @@ export async function setUserRoleAction(
   revalidatePath(`/admin/members/${userId}`);
   revalidatePath('/admin/members/all');
   return {};
+}
+
+/**
+ * J-01 커넥트 삭제.
+ *
+ * 되돌릴 수 없다. 화면에서 무엇이 지워지는지 보여주고 이름을
+ * 입력받은 뒤에만 부른다.
+ *
+ * 참여자와 대기 중인 신청자에게 알린다. 말없이 지우면 마이페이지에서
+ * 팀이 통째로 사라진 것으로 보인다.
+ */
+export async function deleteConnectAction(
+  connectId: string,
+  reason: string,
+): Promise<{ error?: string }> {
+  const a = await admin();
+
+  const text = reason.trim() || '운영진이 정리했어요.';
+  const r = await deleteConnect(a.id, connectId, text);
+  if (!r.ok) return { error: '커넥트를 찾을 수 없어요.' };
+
+  // 커밋된 뒤에 알린다. 알림 실패로 삭제가 되돌려지면 안 된다.
+  if (r.affected.length > 0) {
+    await notifyConnectDeleted(r.affected, r.name, text);
+  }
+
+  revalidatePath('/admin/connects/all');
+  revalidatePath('/connects');
+  redirect('/admin/connects/all');
 }

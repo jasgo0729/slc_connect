@@ -30,9 +30,11 @@ export default async function EditConnectPage({ params }: Props) {
 
   const c = await getConnectDetail(id, user.id);
   if (!c) notFound();
-  if (!c.viewer.isLeader) redirect(`/connects/${id}`);
+  // 관리자는 팀장이 아니어도 들어온다.
+  const isAdmin = user.role === 'admin';
+  if (!c.viewer.isLeader && !isAdmin) redirect(`/connects/${id}`);
 
-  const locked = c.status === 'confirmed' || Boolean(c.confirmedAt);
+  const locked = !isAdmin && (c.status === 'confirmed' || Boolean(c.confirmedAt));
 
   return (
     <>
@@ -44,6 +46,12 @@ export default async function EditConnectPage({ params }: Props) {
         </Link>
 
         <h1 className="create-title">커넥트 수정</h1>
+        {isAdmin && !c.viewer.isLeader && (
+          <p className="field-hint" style={{ marginTop: 8 }}>
+            운영진 권한으로 남의 커넥트를 고치고 있어요. 팀장에게 알리는 편이 좋습니다.
+          </p>
+        )}
+
         <p className="create-lede">
           {trackLabel(c.track)} 트랙은 바꿀 수 없어요. 나머지는 자유롭게 고칠 수 있습니다.
           {c.status === 'rejected' && ' 저장하면 다시 확인 요청이 들어갑니다.'}

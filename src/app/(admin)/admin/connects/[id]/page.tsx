@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import { Badge, StatusBadge } from '@/components/ui/badge';
 import { IconArrowLeft } from '@/components/ui/icon';
 import { getConnectRoster } from '@/lib/db/queries/admin-users';
+import { getDeletePreview } from '@/lib/db/queries/admin-ops';
+import { DeleteConnect } from './delete-connect';
 import { trackLabel, isExampleConnect } from '@/lib/connects/options';
 
 export const dynamic = 'force-dynamic';
@@ -27,6 +29,8 @@ export default async function AdminConnectPage({ params }: { params: Promise<{ i
   const { id } = await params;
   const c = await getConnectRoster(id);
   if (!c) notFound();
+
+  const del = await getDeletePreview(id);
 
   const pending = c.applicants.filter((a) => a.status === 'pending');
   const past = c.applicants.filter((a) => a.status !== 'pending');
@@ -139,6 +143,31 @@ export default async function AdminConnectPage({ params }: { params: Promise<{ i
           </section>
         </>
       )}
+      <h2 className="me-sectitle me-sectitle--gap">관리</h2>
+
+      {/* 지우기 전에 고치는 쪽을 먼저 보여준다. 대부분의 문제는
+          내용을 바로잡으면 끝나고, 삭제는 되돌릴 수 없다. */}
+      <section className="card-block">
+        <div className="danger-zone">
+          <div>
+            <p className="danger-title">내용 수정</p>
+            <p className="danger-sub">팀장이 아니어도 운영진 권한으로 고칠 수 있어요.</p>
+          </div>
+          <Link href={`/connects/${id}/edit`} className="btn btn--line btn--sm">
+            수정하기
+          </Link>
+        </div>
+      </section>
+
+      <section className="card-block" style={{ marginTop: 10 }}>
+        <DeleteConnect
+          connectId={id}
+          name={c.name}
+          memberCount={del?.memberCount ?? 0}
+          pendingCount={del?.pendingCount ?? 0}
+          favoriteCount={del?.favoriteCount ?? 0}
+        />
+      </section>
     </main>
   );
 }

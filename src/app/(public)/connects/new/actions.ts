@@ -3,6 +3,8 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
 import { createConnect, hasConnectInTrack } from '@/lib/db/queries/create-connect';
+import { SEASON_KEYS, getSeasonConfig } from '@/lib/db/queries/season';
+import { isRecruitClosed } from '@/lib/connects/deadline';
 import {
   CAPACITY_MAX,
   CAPACITY_MIN,
@@ -126,6 +128,12 @@ export async function submitCreate(
     if (goalDate && goalDate > GOAL_DEADLINE) {
       errors.goalDate = '산출물 마감일(1월 31일) 이전으로 정해주세요.';
     }
+  }
+
+  // 마감 뒤에 만든 커넥트는 신청을 받을 수 없어 빈 채로 남는다.
+  const season = await getSeasonConfig();
+  if (isRecruitClosed(season[SEASON_KEYS.recruitDeadline.key])) {
+    return { errors: { _: '모집이 마감돼 새 커넥트를 만들 수 없어요.' } };
   }
 
   const values: SubmittedValues = {
