@@ -242,7 +242,15 @@ export const connects = pgTable(
     reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
     rejectionReason: text('rejection_reason'),
 
-    isPreCreated: boolean('is_pre_created').notNull().default(false), // TF 사전 개설
+    isPreCreated: boolean('is_pre_created').notNull().default(false),
+
+    /**
+     * 커넥트 인스타그램 계정.
+     *
+     * 활동 기간에 팀이 직접 적는다. 연락 수단(contact)과 달리
+     * 공개 활동 기록이라 다른 팀도 본다.
+     */
+    instagram: text('instagram'), // TF 사전 개설
 
     // 모집 마감일은 커넥트별 값이 아니라 시즌 공통이다 → seasonConfig
     confirmedAt: timestamp('confirmed_at', { withTimezone: true }), // D-16 일괄 확정 시각
@@ -414,13 +422,29 @@ export const certifications = pgTable(
       .references(() => users.id),
 
     activityDate: date('activity_date').notNull(), // G-18 주차 귀속 기준
-    activityType: text('activity_type').notNull().default('offline'), // 'offline' | 'online' (G-09)
+    /**
+     * 'connect' 커넥트 활동 · 'ccc' 크로스 커넥트 · 'online' 온라인
+     *
+     * 예전 'offline' 은 'connect' 로 읽는다.
+     */
+    activityType: text('activity_type').notNull().default('connect'),
     onlinePlatform: text('online_platform'),
     content: text('content').notNull(),
 
-    photoKey: text('photo_key').notNull(), // S3 오브젝트 키. 파일은 DB에 넣지 않는다.
-    photoWidth: integer('photo_width'),
-    photoHeight: integer('photo_height'),
+    /**
+     * S3 오브젝트 키. 파일은 DB에 넣지 않는다.
+     *
+     * 인증 종류마다 요구하는 사진이 다르다.
+     *   커넥트  주제 사진 + 시간 입증 사진
+     *   CCC     위 둘 + 전원 씨앗판 프로필 사진
+     *   온라인  화면 캡처 2장 (30분 이상 간격)
+     *
+     * 순서가 의미를 갖는다. 검수 화면이 그 순서대로 이름을 붙인다.
+     */
+    photoKeys: text('photo_keys').array().notNull(),
+
+    /** 인스타그램·네이버 카페 게시물 등 산출물 링크. 선택. */
+    outputLink: text('output_link'),
 
     // G-02 크로스 커넥트. 전용 창구 없이 이 항목으로 처리.
     crossConnectId: uuid('cross_connect_id').references(() => connects.id),

@@ -365,8 +365,6 @@ main.page {
 .badge--open { color: var(--ok); background: var(--ok-wash); }
 .badge--review { color: var(--warn); background: var(--warn-wash); }
 .badge--closed { color: var(--s500); background: var(--s100); }
-/* 반려 — 고쳐서 다시 신청해야 하는 상태다. 마감과 달라 보여야 한다. */
-.badge--danger { color: var(--danger); background: var(--danger-wash); }
 .badge--neutral { color: var(--s500); background: var(--s50); font-weight: 500; }
 .badge--track { color: var(--blue); background: var(--blue-wash); }
 
@@ -1700,52 +1698,102 @@ a.utable-row:hover { background: var(--blue-wash); }
 .applicant-head { display: flex; align-items: baseline; gap: 12px; }
 .applicant-head .audit-meta { margin-left: auto; }
 
-/* ── 관리자 위험 조작 ─────────────────────────────────── */
+/* ── 활동 인증 (시안 33~36) ───────────────────────────── */
 
-.danger-zone {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 16px; flex-wrap: wrap;
+.certify-notice {
+  margin-top: 12px; font-size: 13px; line-height: 1.7; color: var(--s500);
 }
-.danger-zone--open { display: block; }
-.danger-title { font-size: 14px; font-weight: 700; color: var(--s800); }
-.danger-sub { margin-top: 3px; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+.certify-choices { display: grid; gap: 10px; margin-top: 22px; }
+.certify-close { display: block; width: 100%; margin-top: 12px; }
+.certify-foot { margin-top: 16px; font-size: 11.5px; color: var(--s300); }
 
-.danger-list { list-style: none; margin: 14px 0 18px; padding: 0; display: grid; gap: 7px; }
-.danger-list li {
-  position: relative; padding-left: 15px;
-  font-size: 13px; line-height: 1.55; color: var(--s600);
+.certify-intro {
+  margin-top: 16px; font-size: 13px; line-height: 1.7; color: var(--s500);
 }
-.danger-list li::before { content: '·'; position: absolute; left: 4px; color: var(--danger); }
-.danger-list b { color: var(--danger); }
 
-.danger-edit { display: block; width: 100%; margin-top: 10px; font-size: 12.5px; }
+.photo-slots { display: grid; gap: 12px; margin-top: 18px; }
 
-/* ── 팀원 배정 ────────────────────────────────────────── */
-
-.assign-current { margin-top: 16px; }
-.assign-current .field-hint { margin-bottom: 8px; }
-.picker-chip .chip-x {
-  display: inline-grid; place-items: center;
-  margin-left: 2px; padding: 0; border: 0; background: none;
-  color: inherit; cursor: pointer; opacity: .6;
+.photo-slot {
+  display: grid; place-items: center;
+  min-height: 130px; padding: 16px;
+  border: 1px dashed var(--line-strong); border-radius: var(--r-lg);
+  background: var(--s50); cursor: pointer; overflow: hidden;
+  transition: border-color .15s, background .15s;
 }
-.picker-chip .chip-x:hover { opacity: 1; }
-.picker-chip { cursor: default; }
+.photo-slot:hover { border-color: var(--blue); background: var(--blue-wash); }
+.photo-slot[data-filled='true'] { padding: 0; border-style: solid; background: var(--card); }
+.photo-slot img { width: 100%; max-height: 300px; object-fit: contain; }
+.photo-slot-change {
+  padding: 8px; font-size: 12px; font-weight: 600; color: var(--blue);
+}
+.photo-slot-empty { display: grid; justify-items: center; gap: 6px; color: var(--s300); }
+.photo-slot-empty b { font-size: 13.5px; font-weight: 700; color: var(--s600); }
+.photo-slot-empty em { font-size: 12px; font-style: normal; color: var(--s400); }
 
-/* 현재 팀원 — 칩으로는 동작 두 개를 담기 어렵다 */
-.assign-list { list-style: none; margin: 10px 0 0; padding: 0; }
-.assign-list li {
-  display: flex; align-items: center; gap: 9px;
-  padding: 11px 2px; border-bottom: 1px solid var(--line);
+.portrait-notice {
+  margin-top: 14px; font-size: 11.5px; line-height: 1.65; color: var(--s400);
 }
-.assign-list li:last-child { border-bottom: 0; }
-.assign-list svg { color: var(--s300); flex: none; }
-.assign-name { font-size: 14px; font-weight: 600; color: var(--s800); }
-.assign-badge {
-  padding: 2px 8px; border-radius: 100px;
-  background: var(--blue-wash); color: var(--blue);
-  font-size: 11px; font-weight: 700;
+
+.certify-section {
+  margin-top: 28px; font-size: 15px; font-weight: 800; color: var(--s800);
 }
-.assign-actions { margin-left: auto; display: flex; gap: 4px; }
-.assign-actions .textbtn { padding: 4px 8px; font-size: 12.5px; }
-.assign-remove { color: var(--danger); }
+.certify-section em { font-style: normal; font-weight: 500; color: var(--muted); }
+.certify-section + .input, .certify-section + .textarea { margin-top: 10px; }
+
+/* 참여 인원 체크 */
+.check-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
+.check-list--inner { margin: 0; padding: 4px 12px 12px; }
+
+.check-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 15px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--card); font-size: 14px; color: var(--s700);
+  transition: border-color .15s;
+}
+.check-row[data-on='true'] { border-color: var(--blue); }
+
+.check-box {
+  width: 19px; height: 19px; flex: none;
+  border: 1.5px solid var(--line-strong); border-radius: 5px;
+  background: var(--card); position: relative;
+}
+.check-row[data-on='true'] .check-box { background: var(--navy-900); border-color: var(--navy-900); }
+.check-row[data-on='true'] .check-box::after {
+  content: ''; position: absolute; left: 5px; top: 1px;
+  width: 5px; height: 10px; border: solid #fff;
+  border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+
+.check-groups { display: grid; gap: 10px; margin-top: 12px; }
+.check-group { border: 1px solid var(--line); border-radius: var(--r); background: var(--card); }
+.check-group[data-open='true'] { border-color: var(--line-strong); }
+.check-group-head {
+  display: flex; align-items: center; justify-content: space-between; width: 100%;
+  padding: 14px 15px; border: 0; background: none; cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: 700; color: var(--s800);
+}
+.check-group-caret { color: var(--s300); }
+
+/* 검수 화면의 여러 장 */
+.cert-photos { display: grid; gap: 10px; margin-top: 12px; }
+@media (min-width: 640px) {
+  .cert-photos { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+}
+.cert-photos figure { margin: 0; }
+.cert-photos img {
+  width: 100%; max-height: 300px; object-fit: contain;
+  border-radius: var(--r); background: var(--s50);
+}
+.cert-photos figcaption {
+  margin-top: 5px; font-size: 11.5px; font-weight: 600; color: var(--muted);
+}
+.cert-link {
+  display: inline-block; margin-top: 10px;
+  font-size: 12.5px; font-weight: 600; color: var(--blue);
+}
+
+.cert-log-cross {
+  display: block; font-size: 11.5px; font-style: normal;
+  font-weight: 600; color: var(--blue);
+}

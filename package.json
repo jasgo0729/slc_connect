@@ -3,29 +3,36 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
     "build": "next build",
-    "start": "next start",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "roster:import": "tsx --env-file=.env.local src/scripts/import-roster.ts"
+    "dev": "next dev",
+    "roster:import": "tsx --env-file=.env.local scripts/import-roster.ts",
+    "start": "next start",
+    "vapid": "tsx scripts/gen-vapid.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1135.0",
+    "@aws-sdk/s3-request-presigner": "^3.1135.0",
     "arctic": "^3.7.0",
     "drizzle-orm": "^0.44.0",
     "exceljs": "^4.4.0",
     "next": "^16.3.0",
+    "nodemailer": "^10.0.3",
     "pg": "^8.13.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.11.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.2.4",
+    "@types/web-push": "^3.6.4",
     "dotenv": "^16.4.0",
     "drizzle-kit": "^0.31.0",
     "tsx": "^4.19.0",

@@ -21,6 +21,16 @@ export const SEASON_KEYS = {
     hint: '가입 완료 화면에 "○월 ○일 카카오톡 톡방이 만들어집니다"로 표시됩니다.',
     type: 'date' as const,
   },
+  vacationMode: {
+    key: 'vacation_mode',
+    label: '방학 기간',
+    hint: 'G-09 — 켜면 온라인 활동 인증이 나타납니다. 학기 중에는 직접 만나는 것이 원칙입니다.',
+    type: 'select' as const,
+    options: [
+      { value: 'off', label: '학기 중 (온라인 인증 숨김)' },
+      { value: 'on', label: '방학 중 (온라인 인증 노출)' },
+    ],
+  },
   rankingMode: {
     key: 'ranking_mode',
     label: '랭킹 공개 모드',

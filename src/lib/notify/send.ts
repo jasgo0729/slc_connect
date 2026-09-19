@@ -34,6 +34,8 @@ export type NotifyType =
   | 'assigned' // 운영진이 커넥트에 배정했다
   | 'removed' // 운영진이 커넥트에서 뺐다
   | 'leader_changed' // 팀장이 바뀌었다
+  | 'cert_approved' // 활동 인증이 승인됐다
+  | 'cert_rejected' // 활동 인증이 반려됐다
   | 'season_confirmed'
   | 'notice';
 
@@ -475,4 +477,32 @@ export async function notifyLeaderChanged(
   }
 
   await push(rows);
+}
+
+/* ── G-05 인증 검수 결과 ───────────────────────────────── */
+
+/**
+ * 인증 검수 결과를 올린 사람에게 알린다.
+ *
+ * 반려는 사유를 담는다. 무엇이 문제였는지 모르면 같은 실수로
+ * 다시 올리고, 검수하는 쪽의 일도 그만큼 늘어난다.
+ */
+export async function notifyCertificationReviewed(
+  userId: string,
+  connectId: string,
+  connectName: string,
+  approved: boolean,
+  reason?: string,
+): Promise<void> {
+  await push([
+    {
+      userId,
+      type: approved ? 'cert_approved' : 'cert_rejected',
+      title: approved ? '활동 인증이 확인됐어요' : '활동 인증을 다시 올려주세요',
+      body: approved
+        ? `'${connectName}'의 활동이 기록에 쌓였어요.`
+        : `'${connectName}' — ${reason ?? '내용을 확인하고 다시 올려주세요.'}`,
+      link: approved ? `/connects/${connectId}` : `/connects/${connectId}/certify`,
+    },
+  ]);
 }

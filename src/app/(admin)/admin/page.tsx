@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getAdminCounts } from '@/lib/db/queries/admin';
+import { countPendingReview } from '@/lib/db/queries/certifications';
 import {
   getMemberStats,
   getRecentAudit,
@@ -54,12 +55,13 @@ const ACTION_LABEL: Record<string, string> = {
 };
 
 export default async function AdminHome() {
-  const [counts, stats, short, stale, audit] = await Promise.all([
+  const [counts, stats, short, stale, audit, pendingCerts] = await Promise.all([
     getAdminCounts(),
     getMemberStats(),
     getShortConnects(),
     getStaleConnects(),
     getRecentAudit(8),
+    countPendingReview(),
   ]);
 
   return (
@@ -67,6 +69,13 @@ export default async function AdminHome() {
       <h1 className="me-title">오늘 처리할 것</h1>
 
       <div className="admin-cards">
+        {/* 활동이 시작되면 이게 매일 쌓인다. 맨 앞에 둔다. */}
+        <Card
+          href="/admin/certifications"
+          n={pendingCerts}
+          label="인증 검수 대기"
+          hint="확인해야 활동 기록에 쌓여요"
+        />
         <Card
           href="/admin/connects"
           n={counts.pendingConnects}
@@ -91,6 +100,7 @@ export default async function AdminHome() {
       <div className="admin-cards">
         <Card n={counts.connects} label="열려 있는 커넥트" />
         <Card
+          href="/admin/members/all"
           n={stats.joined}
           label="가입한 인원"
           hint={`명단 ${stats.rosterTotal}명 중 ${Math.round((stats.joined / Math.max(stats.rosterTotal, 1)) * 100)}%`}
