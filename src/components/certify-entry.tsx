@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sheet } from './ui/sheet';
-import { DEADLINE_NOTICE } from '@/lib/connects/certification';
+import { DEADLINE_NOTICE, type OnlineCertAccess } from '@/lib/connects/certification';
 
 /**
  * 활동 인증 진입.
@@ -17,13 +17,13 @@ import { DEADLINE_NOTICE } from '@/lib/connects/certification';
  */
 export function CertifyEntry({
   connectId,
-  showOnline,
+  online,
   label = '인증하기',
   className = 'btn btn--sm',
 }: {
   connectId: string;
-  /** 온라인 인증은 방학 기간에만 연다(G-09). */
-  showOnline: boolean;
+  /** G-09 — 방학 중에는 전부, 학기 중에는 도전 커넥트만. */
+  online: OnlineCertAccess;
   /**
    * 여는 버튼의 문구와 모양.
    *
@@ -63,13 +63,14 @@ export function CertifyEntry({
             <button type="button" className="btn btn--line btn--block" onClick={() => go('cross')}>
               CCC 활동 인증 →
             </button>
-            {showOnline && (
+            {online.allowed && (
               <button
                 type="button"
                 className="btn btn--line btn--block"
                 onClick={() => go('online')}
               >
-                온라인 활동 인증 →
+                온라인 활동 인증
+                {online.note && <em className="certify-cond">({online.note})</em>} →
               </button>
             )}
           </div>
@@ -78,8 +79,10 @@ export function CertifyEntry({
             닫기
           </button>
 
-          {!showOnline && (
-            <p className="certify-foot">* 온라인 활동 인증은 방학 기간에만 노출됩니다</p>
+          {!online.allowed && (
+            <p className="certify-foot">
+              * 학기 중 온라인 활동 인증은 도전 커넥트만 가능해요. 방학 기간에는 모두 열려요.
+            </p>
           )}
         </div>
       </Sheet>

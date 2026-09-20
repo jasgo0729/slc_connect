@@ -1,6 +1,7 @@
 import { IconSpark } from './ui/icon';
 import { CertifyEntry } from './certify-entry';
 import type { CertRow } from '@/lib/db/queries/certifications';
+import type { OnlineCertAccess } from '@/lib/connects/certification';
 
 /**
  * G-04 활동 인증 이력.
@@ -20,12 +21,12 @@ const STATUS: Record<string, { text: string; tone: string }> = {
 export function CertHistory({
   connectId,
   items,
-  showOnline,
+  online,
 }: {
   connectId: string;
   items: CertRow[];
-  /** 온라인 인증은 방학 기간에만 연다(G-09). */
-  showOnline: boolean;
+  /** G-09 — 방학 중에는 전부, 학기 중에는 도전 커넥트만. */
+  online: OnlineCertAccess;
 }) {
   const approved = items.filter((i) => i.reviewStatus === 'approved').length;
 
@@ -35,7 +36,7 @@ export function CertHistory({
         <h2 className="section-title">
           활동 인증 <span className="me-sectitle-sub">확인된 {approved}회</span>
         </h2>
-        <CertifyEntry connectId={connectId} showOnline={showOnline} />
+        <CertifyEntry connectId={connectId} online={online} />
       </div>
 
       {items.length === 0 ? (

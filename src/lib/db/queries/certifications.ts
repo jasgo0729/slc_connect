@@ -1,6 +1,12 @@
 import { and, asc, desc, eq, isNull, ne, sql } from 'drizzle-orm';
 import { db } from '../client';
-import { CERT_SPECS, isCertifyExpired, type CertType } from '@/lib/connects/certification';
+import {
+  CERT_SPECS,
+  isCertifyExpired,
+  onlineCertAccess,
+  type CertType,
+} from '@/lib/connects/certification';
+import { SEASON_KEYS, getSeasonConfig } from './season';
 import { isDeliverableGrade } from '@/lib/scoring/rules';
 import { recalculateConnectScores } from './scoring';
 import {
@@ -25,6 +31,7 @@ export type CertBlock =
   | 'BAD_PARTICIPANTS'
   | 'FUTURE_DATE'
   | 'EXPIRED' // G-18 다음날 정오를 넘겼다
+  | 'ONLINE_LOCKED' // G-09 학기 중 온라인 인증은 도전 커넥트만
   | 'BAD_PHOTOS';
 
 export const CERT_MESSAGES: Record<CertBlock, string> = {
@@ -33,6 +40,7 @@ export const CERT_MESSAGES: Record<CertBlock, string> = {
   BAD_PARTICIPANTS: '참여한 팀원을 골라주세요. 본인도 포함해야 해요.',
   FUTURE_DATE: '아직 오지 않은 날짜예요.',
   EXPIRED: '인증 기한이 지났어요. 활동 다음날 정오까지 올려야 해요.',
+  ONLINE_LOCKED: '학기 중에는 도전 커넥트만 온라인으로 인증할 수 있어요.',
   BAD_PHOTOS: '필요한 사진을 모두 올려주세요.',
 };
 
@@ -71,14 +79,31 @@ export async function submitCertification(
     return { ok: false, reason: 'BAD_PHOTOS' };
   }
 
+  /* G-09 온라인 인증 조건. 트랜잭션 밖에서 읽는다 — 시즌 설정은
+     이 커넥트와 무관한 전역 값이라 잠글 이유가 없다. */
+  const season = input.activityType === 'online' ? await getSeasonConfig() : null;
+
   return db.transaction(async (tx) => {
     const rows = await tx
-      .select({ id: connects.id, status: connects.status, confirmedAt: connects.confirmedAt })
+      .select({
+        id: connects.id,
+        status: connects.status,
+        confirmedAt: connects.confirmedAt,
+        track: connects.track,
+      })
       .from(connects)
       .where(eq(connects.id, input.connectId))
       .limit(1);
     const c = rows[0];
     if (!c) return { ok: false, reason: 'NOT_MEMBER' } as const;
+
+    // 화면에서도 버튼을 감추지만 액션은 폼을 거치지 않고 부를 수 있다.
+    if (input.activityType === 'online') {
+      const vacation = season?.[SEASON_KEYS.vacationMode.key] === 'on';
+      if (!onlineCertAccess(vacation, c.track).allowed) {
+        return { ok: false, reason: 'ONLINE_LOCKED' } as const;
+      }
+    }
 
     // 올리는 사람이 이 커넥트 소속인지.
     const mine = await tx

@@ -5,8 +5,9 @@ import { Notice } from '@/components/ui/notice';
 import { IconArrowLeft } from '@/components/ui/icon';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getConnectDetail } from '@/lib/db/queries/connect-detail';
+import { SEASON_KEYS, getSeasonConfig } from '@/lib/db/queries/season';
 import { getCrossCandidates, getMemberNames } from '@/lib/db/queries/certifications';
-import { CERT_SPECS, isCertType } from '@/lib/connects/certification';
+import { CERT_SPECS, isCertType, onlineCertAccess } from '@/lib/connects/certification';
 import { storageEnabled } from '@/lib/storage/s3';
 import { CertifyForm } from './certify-form';
 
@@ -35,6 +36,14 @@ export default async function CertifyPage({ params, searchParams }: Props) {
   const c = await getConnectDetail(id, user.id);
   if (!c) notFound();
   if (!c.viewer.isMember) redirect(`/connects/${id}`);
+
+  /* G-09 — 주소로 바로 들어올 수 있으므로 여기서도 본다.
+     다 채워 올린 뒤에 서버가 거절하면 그 시간이 통째로 버려진다. */
+  if (type === 'online') {
+    const season = await getSeasonConfig();
+    const vacation = season[SEASON_KEYS.vacationMode.key] === 'on';
+    if (!onlineCertAccess(vacation, c.track).allowed) redirect(`/connects/${id}`);
+  }
 
   const [members, crossConnects] = await Promise.all([
     getMemberNames(id),

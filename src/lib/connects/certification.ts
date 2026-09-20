@@ -76,6 +76,30 @@ export function isCertifyExpired(activityDate: string, now = new Date()): boolea
   return now.getTime() > limit;
 }
 
+/**
+ * G-09 온라인 인증을 열어 줄지.
+ *
+ * 방학 중에는 모두 연다. 학기 중에는 도전 커넥트만 연다 —
+ * 취미 트랙은 자주 만나는 것 자체가 성과라(§6.10) 화면으로 때우면
+ * 목적과 어긋나지만, 도전 트랙은 결과물을 만드는 팀이라 학기 중에도
+ * 온라인 작업이 활동의 실제 형태다.
+ *
+ * 열어 준 경우에도 왜 열렸는지를 함께 알려준다. 도전 팀만 보이는
+ * 항목이라, 아무 설명이 없으면 다른 팀에게는 없는 기능을 쓰는지
+ * 모르고 취미 팀은 왜 자기에게만 없는지 알 수 없다.
+ */
+export interface OnlineCertAccess {
+  allowed: boolean;
+  /** 버튼 문구 옆에 붙는 짧은 말. 조건 없이 열렸으면 null. */
+  note: string | null;
+}
+
+export function onlineCertAccess(vacation: boolean, track: string): OnlineCertAccess {
+  if (vacation) return { allowed: true, note: null };
+  if (track === 'qualitative') return { allowed: true, note: '도전 커넥트만 가능' };
+  return { allowed: false, note: null };
+}
+
 export function isCertType(v: string): v is CertType {
   return v === 'offline' || v === 'cross' || v === 'online';
 }

@@ -5,6 +5,7 @@ import { InstagramField } from './instagram-field';
 import { CertifyEntry } from './certify-entry';
 import { IconArrowLeft } from './ui/icon';
 import type { RankingMode, ScoreEntry, TeamMember } from '@/lib/db/queries/ranking';
+import type { OnlineCertAccess } from '@/lib/connects/certification';
 import { trackLabel } from '@/lib/connects/options';
 import {
   RANKING_PERIOD_LABEL,
@@ -51,8 +52,8 @@ export interface TeamPageProps {
   rankingMode: RankingMode;
   scores: ScoreEntry[];
 
-  /** 온라인 인증은 방학 기간에만 연다(G-09). */
-  showOnline: boolean;
+  /** G-09 — 방학 중에는 전부, 학기 중에는 도전 커넥트만. */
+  online: OnlineCertAccess;
 }
 
 export function TeamPage(p: TeamPageProps) {
@@ -109,7 +110,7 @@ export function TeamPage(p: TeamPageProps) {
         {p.isMine && (
           <CertifyEntry
             connectId={p.connectId}
-            showOnline={p.showOnline}
+            online={p.online}
             label="활동 인증으로"
             className="btn btn--line btn--block"
           />

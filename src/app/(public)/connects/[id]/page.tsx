@@ -16,6 +16,7 @@ import { getRankingMode, getSeasonConfig } from '@/lib/db/queries/season';
 import { getTeamView } from '@/lib/db/queries/ranking';
 import { countFavorites, getFavoriteIds } from '@/lib/db/queries/favorites';
 import { CONDITIONS, DAYS, GOAL_TYPES, isExampleConnect, trackLabel } from '@/lib/connects/options';
+import { onlineCertAccess } from '@/lib/connects/certification';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,7 +78,7 @@ export default async function ConnectDetailPage({ params }: Props) {
           points={team.points}
           rankingMode={mode}
           scores={team.scores}
-          showOnline={season.vacation_mode === 'on'}
+          online={onlineCertAccess(season.vacation_mode === 'on', c.track)}
         />
       </>
     );

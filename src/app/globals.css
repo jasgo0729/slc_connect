@@ -198,25 +198,32 @@ main.page {
   .hero-cards { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
 }
 
-/* MBTI 진입 카드 — Negative 테마 */
-.mbti-card {
+/* 히어로 왼쪽 카드 — Negative 테마.
+
+   예전에는 MBTI 진입 카드였고 클래스 이름도 .mbti-* 였다. 지금은
+   활동 인증 카드라 이름을 바꿨다. 이름만의 문제가 아니었다 —
+   .mbti-title 이 아래쪽 MBTI 결과 화면(.mbti-face 근처)에서 범위
+   제한 없이 다시 정의되어, 뒤에 오는 그 규칙이 히어로까지 덮고
+   있었다. 히어로 제목이 16px 이 아니라 22px + 위 여백 20px 로
+   그려져 좁은 카드에서 찌그러진 원인이다. */
+.act-card {
   display: block; padding: 18px; border-radius: var(--r-lg);
   background: linear-gradient(140deg, var(--navy-950) 0%, var(--navy-900) 70%, var(--navy-700) 100%);
   color: var(--on-dark); position: relative; overflow: hidden;
   transition: transform .18s, box-shadow .18s;
 }
-.mbti-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+.act-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
 
 /* PRISM 빛 그래픽 */
-.mbti-card::after {
+.act-card::after {
   content: ''; position: absolute; inset: 0;
   background: repeating-linear-gradient(90deg, rgba(160,190,255,.16) 0 1px, transparent 1px 7px);
   mask-image: radial-gradient(120% 90% at 85% 110%, #000 0%, transparent 70%);
   pointer-events: none;
 }
-.mbti-eyebrow { position: relative; font-size: 10px; font-weight: 700; letter-spacing: .14em; color: var(--on-dark-dim); }
-.mbti-title { position: relative; margin-top: 8px; font-size: 16px; font-weight: 700; line-height: 1.4; }
-.mbti-go {
+.act-eyebrow { position: relative; font-size: 10px; font-weight: 700; letter-spacing: .14em; color: var(--on-dark-dim); }
+.act-title { position: relative; margin-top: 8px; font-size: 16px; font-weight: 700; line-height: 1.4; }
+.act-go {
   position: relative; display: inline-flex; align-items: center; gap: 5px;
   margin-top: 14px; padding: 6px 12px; border-radius: 100px;
   border: 1px solid rgba(226,232,240,.35); font-size: 12px; font-weight: 600;
@@ -2122,10 +2129,10 @@ a.utable-row:hover { background: var(--blue-wash); }
   /* 랭킹 카드가 더 많은 줄을 담는다. 왼쪽보다 조금 넓게 준다. */
   .hero-cards { grid-template-columns: 1fr 1.12fr; gap: 10px; }
 
-  .mbti-card, .rank-card { padding: 14px; overflow: hidden; }
+  .act-card, .rank-card { padding: 14px; overflow: hidden; }
 
-  .mbti-eyebrow { font-size: 9.5px; letter-spacing: .1em; }
-  .mbti-title { margin-top: 6px; font-size: 14.5px; line-height: 1.35; }
+  .act-eyebrow { font-size: 9.5px; letter-spacing: .1em; }
+  .act-title { margin-top: 6px; font-size: 14.5px; line-height: 1.35; }
 
   .rank-card-title { font-size: 12.5px; }
   .rank-mini { margin-top: 9px; gap: 5px; }
@@ -2134,7 +2141,7 @@ a.utable-row:hover { background: var(--blue-wash); }
   .rank-mini-points { font-size: 10.5px; }
 
   /* 버튼 문구가 줄바꿈되면 카드 아래가 들쭉날쭉해진다. */
-  .mbti-go, .rank-go {
+  .act-go, .rank-go {
     margin-top: 10px; padding: 5px 9px; gap: 4px;
     font-size: 11px; white-space: nowrap;
   }
@@ -2144,6 +2151,35 @@ a.utable-row:hover { background: var(--blue-wash); }
    조여 봐야 팀 이름이 두세 글자만 남는다. */
 @media (max-width: 359px) {
   .hero-cards { grid-template-columns: 1fr; }
-  .mbti-card, .rank-card { padding: 16px; }
+  .act-card, .rank-card { padding: 16px; }
   .rank-mini li { font-size: 12.5px; }
+}
+
+/* 히어로 카드가 하나만 남는 경우.
+
+   모집 중에는 인증 카드가 없고 랭킹(또는 인기 커넥트) 한 장만
+   남는다. 2열 그대로 두면 한 칸이 통째로 비어 화면이 왼쪽으로
+   쏠린다. 한 장일 때는 한 칸으로 두되, 본문 폭까지 늘리지는
+   않는다 — 카드 하나가 화면을 가로지르면 목록보다 무거워 보인다. */
+.hero-cards[data-count='1'] { grid-template-columns: 1fr; max-width: 420px; }
+@media (min-width: 900px) {
+  .hero-cards[data-count='1'] { grid-template-columns: 1fr; max-width: 380px; }
+}
+@media (max-width: 899px) {
+  .hero-cards[data-count='1'] { grid-template-columns: 1fr; }
+  /* 한 칸을 다 쓰므로 조였던 치수를 되돌린다. */
+  .hero-cards[data-count='1'] .rank-card { padding: 18px; }
+  .hero-cards[data-count='1'] .rank-card-title { font-size: 14px; }
+  .hero-cards[data-count='1'] .rank-mini li { font-size: 12.5px; }
+  .hero-cards[data-count='1'] .rank-mini-points { font-size: 12.5px; }
+  .hero-cards[data-count='1'] .rank-go { font-size: 12px; padding: 6px 12px; }
+}
+
+/* 카드가 하나도 없으면 제목만 남는다. 아래 여백을 줄인다. */
+.hero-cards:empty { display: none; }
+
+/* 인증 유형 버튼에 붙는 조건 (G-09 학기 중 온라인은 도전만) */
+.certify-cond {
+  margin-left: 5px; font-style: normal; font-weight: 500;
+  font-size: 12px; color: var(--muted);
 }
