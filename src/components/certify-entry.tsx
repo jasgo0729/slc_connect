@@ -18,10 +18,22 @@ import { DEADLINE_NOTICE } from '@/lib/connects/certification';
 export function CertifyEntry({
   connectId,
   showOnline,
+  label = '인증하기',
+  className = 'btn btn--sm',
 }: {
   connectId: string;
   /** 온라인 인증은 방학 기간에만 연다(G-09). */
   showOnline: boolean;
+  /**
+   * 여는 버튼의 문구와 모양.
+   *
+   * 인증 이력 옆에서는 작은 '인증하기', 팀 페이지 하단에서는
+   * 넓은 '활동 인증으로'다. 같은 시트를 여는 버튼이라 컴포넌트를
+   * 나누지 않고 겉모습만 받는다 — 나누면 시트 문구(G-18 마감
+   * 안내)를 고칠 때 두 곳을 고쳐야 한다.
+   */
+  label?: string;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -33,8 +45,8 @@ export function CertifyEntry({
 
   return (
     <>
-      <button type="button" className="btn btn--sm" onClick={() => setOpen(true)}>
-        인증하기
+      <button type="button" className={className} onClick={() => setOpen(true)}>
+        {label}
       </button>
 
       <Sheet open={open} onClose={() => setOpen(false)} labelledBy="certify-entry">

@@ -12,6 +12,8 @@ import {
   setEarlyClosed,
 } from '@/lib/db/queries/applications';
 import { countFavorites, toggleFavorite } from '@/lib/db/queries/favorites';
+import { setInstagram } from '@/lib/db/queries/ranking';
+import { normalizeInstagram } from '@/lib/connects/instagram';
 import { LEAVE_MESSAGES, leaveConnect } from '@/lib/db/queries/leave';
 import { isRejectReason, rejectLabel } from '@/lib/connects/reject-reasons';
 import {
@@ -204,4 +206,36 @@ export async function leaveAction(
   if (r.deleted) redirect('/connects');
   revalidatePath(`/connects/${connectId}`);
   return { deleted: false };
+}
+
+/**
+ * 커넥트 인스타그램 저장(시안 31). 팀장만.
+ *
+ * 저장은 '@' 없이 아이디만 한다 — 붙여 두면 어떤 행은 붙고 어떤
+ * 행은 안 붙은 채로 섞인다. 주소를 통째로 붙여넣은 경우도 아이디만
+ * 뽑는다(normalizeInstagram).
+ *
+ * 팀장 확인은 여기가 아니라 쿼리의 UPDATE 조건 안에 있다. 서버
+ * 액션은 폼을 거치지 않고 직접 부를 수 있으므로(규칙 6), 화면에서
+ * 수정 버튼을 감추는 것만으로는 막히지 않는다.
+ *
+ * 성공하면 저장된 값을 돌려준다. 화면 입력을 서버 값으로 덮기
+ * 위해서다 — React 19 가 폼 액션 뒤 입력을 비우기 때문에 값을
+ * 돌려주지 않으면 검증에 걸렸을 때 적어 둔 것이 사라진다(규칙 4).
+ */
+export async function setInstagramAction(
+  connectId: string,
+  value: string,
+): Promise<{ error?: string; value?: string }> {
+  const user = await getCurrentUser();
+  if (!user) redirect(`/login?callbackUrl=${encodeURIComponent(`/connects/${connectId}`)}`);
+
+  const parsed = normalizeInstagram(value);
+  if (!parsed.ok) return { error: parsed.error };
+
+  const res = await setInstagram(user.id, connectId, parsed.value);
+  if (!res.ok) return { error: res.reason };
+
+  revalidatePath(`/connects/${connectId}`);
+  return { value: res.value ?? '' };
 }

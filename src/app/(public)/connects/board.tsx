@@ -17,6 +17,31 @@ import type { Filters } from '@/components/filter-sheet';
 import { IconArrowRight, IconFilter } from '@/components/ui/icon';
 import { matchesCampus } from '@/lib/connects/campus-filter';
 
+/**
+ * 히어로에 필요한 것만.
+ *
+ * lib/db/queries/ranking.ts 의 타입을 가져오지 않는다. 이 파일은
+ * 클라이언트 컴포넌트라, 그 모듈을 참조하면 pg 가 브라우저 번들로
+ * 딸려 갈 여지가 생긴다(규칙 12). 필드 네 개라 여기 적는 편이 싸다.
+ */
+export interface HeroRank {
+  connectId: string;
+  name: string;
+  /** 부분 공개 구간에서는 null. */
+  rank: number | null;
+  points: number | null;
+}
+
+export interface HeroProps {
+  /**
+   * 모집이 끝났고 인증할 커넥트가 있을 때의 주소. 그 외에는 null
+   * 이고, 그때 왼쪽 카드는 MBTI 로 남는다.
+   */
+  certifyHref: string | null;
+  /** 상위 3팀. 비어 있으면 랭킹 카드를 띄우지 않는다. */
+  ranking: HeroRank[];
+}
+
 const TRACKS = [
   { value: '', label: '전체' },
   { value: 'quantitative', label: '취미' },
@@ -28,12 +53,14 @@ export function Board({
   loggedIn,
   featured,
   favoriteIds,
+  hero,
 }: {
   items: ConnectCardData[];
   loggedIn: boolean;
   /** 히어로 오른쪽 카드. 찜이 없으면 최신 커넥트가 온다. */
   featured?: { c: ConnectCardData; label: string; fresh: boolean } | null;
   favoriteIds: string[];
+  hero: HeroProps;
 }) {
   const favs = new Set(favoriteIds);
   const [track, setTrack] = useState('');
@@ -79,42 +106,93 @@ export function Board({
 
   return (
     <>
-      {/* 히어로 밴드 */}
+      {/* 히어로 밴드 (시안 40)
+
+          왼쪽은 지금 해야 할 일이다. 모집 중에는 '무엇에 들어갈까'라서
+          MBTI, 모집이 끝나면 '이번 주 활동을 인증했나'라서 인증이다.
+          오른쪽은 랭킹이지만, 점수가 하나도 없는 동안에는 빈 카드가
+          되므로 그때는 인기 커넥트를 대신 둔다 — 오른쪽 한 칸이
+          통째로 비면 히어로가 왼쪽으로 쏠려 보인다. */}
       <section className="hero-band">
         <div className="shell">
           <h1 className="hero-heading">
-            나와 맞는 커넥트를
-            <br />
-            찾아보세요
+            {hero.certifyHref ? (
+              <>
+                이번 주 활동을
+                <br />
+                인증해 주세요
+              </>
+            ) : (
+              <>
+                나와 맞는 커넥트를
+                <br />
+                찾아보세요
+              </>
+            )}
           </h1>
 
           <div className="hero-cards">
-            <Link href="/mbti" className="mbti-card">
-              <p className="mbti-eyebrow">CONNECT MBTI</p>
-              <p className="mbti-title">
-                성향으로 맞는
-                <br />
-                커넥트 찾기
-              </p>
-              <span className="mbti-go">
-                검사 시작하기 <IconArrowRight size={13} />
-              </span>
-            </Link>
-
-            {/* 찜이 가장 많은 커넥트. 모바일에서도 보인다 —
-                MBTI 카드 혼자 남으면 오른쪽이 통째로 빈다. */}
-            {featured && (
-              <Link href={`/connects/${featured.c.id}`} className="pick-card">
-                <p className="pick-label" data-fresh={featured.fresh}>
-                  {featured.label}
+            {hero.certifyHref ? (
+              <Link href={hero.certifyHref} className="mbti-card">
+                <p className="mbti-eyebrow">활동 인증</p>
+                <p className="mbti-title">
+                  이번 주 활동
+                  <br />
+                  인증하기
                 </p>
-                <p className="pick-name">{featured.c.name}</p>
-                <p className="pick-meta">
-                  {featured.fresh
-                    ? `${featured.c.memberCount}/${featured.c.capacity}명 · 지금 신청받는 중`
-                    : `${featured.c.favoriteCount}명이 찜 · ${featured.c.memberCount}/${featured.c.capacity}명`}
-                </p>
+                <span className="mbti-go">
+                  인증하러 가기 <IconArrowRight size={13} />
+                </span>
               </Link>
+            ) : (
+              <Link href="/mbti" className="mbti-card">
+                <p className="mbti-eyebrow">CONNECT MBTI</p>
+                <p className="mbti-title">
+                  성향으로 맞는
+                  <br />
+                  커넥트 찾기
+                </p>
+                <span className="mbti-go">
+                  검사 시작하기 <IconArrowRight size={13} />
+                </span>
+              </Link>
+            )}
+
+            {hero.ranking.length > 0 ? (
+              /* 시안은 어두운 판과 흰 판 두 가지가 있다. data-tone 만
+                 바꾸면 뒤집힌다 — 왼쪽 카드가 어두운 동안에는 흰 쪽이
+                 균형이 맞아 기본값을 light 로 둔다. */
+              <Link href="/ranking" className="rank-card" data-tone="light">
+                <p className="rank-card-title">커넥트 랭킹</p>
+                <ol className="rank-mini">
+                  {hero.ranking.map((r, i) => (
+                    <li key={r.connectId}>
+                      <span className="rank-mini-num">{r.rank ?? i + 1}</span>
+                      <span className="rank-mini-name">{r.name}</span>
+                      {r.points !== null && (
+                        <span className="rank-mini-points">{r.points}점</span>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+                <span className="rank-go">
+                  전체 랭킹 보기 <IconArrowRight size={13} />
+                </span>
+              </Link>
+            ) : (
+              featured && (
+                <Link href={`/connects/${featured.c.id}`} className="pick-card">
+                  <p className="pick-label" data-fresh={featured.fresh}>
+                    {featured.label}
+                  </p>
+                  <p className="pick-name">{featured.c.name}</p>
+                  <p className="pick-meta">
+                    {featured.fresh
+                      ? `${featured.c.memberCount}/${featured.c.capacity}명 · 지금 신청받는 중`
+                      : `${featured.c.favoriteCount}명이 찜 · ${featured.c.memberCount}/${featured.c.capacity}명`}
+                  </p>
+                </Link>
+              )
             )}
           </div>
         </div>

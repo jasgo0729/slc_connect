@@ -1797,3 +1797,196 @@ a.utable-row:hover { background: var(--blue-wash); }
   display: block; font-size: 11.5px; font-style: normal;
   font-weight: 600; color: var(--blue);
 }
+
+/* =========================================================
+   G-13 랭킹 · 활동 모드 팀 페이지 (시안 30~32, 40)
+   ========================================================= */
+
+.rank-page { padding-top: 18px; }
+
+.rank-heading { margin: 26px 0 12px; font-size: 13px; font-weight: 700; color: var(--muted); }
+
+/* 내 커넥트 요약 — Negative 테마. 목록에서 자기 팀을 눈으로
+   찾게 하지 않으려고 위에 따로 둔다. */
+.rank-mine {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  margin-top: 16px; padding: 18px 20px; border-radius: var(--r-lg);
+  background: linear-gradient(140deg, var(--navy-950) 0%, var(--navy-900) 70%, var(--navy-700) 100%);
+  color: var(--on-dark);
+  transition: transform .18s, box-shadow .18s;
+}
+.rank-mine:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+.rank-mine-left { min-width: 0; }
+.rank-mine-eyebrow { display: block; font-size: 10px; font-weight: 700; letter-spacing: .14em; color: var(--on-dark-dim); }
+.rank-mine-name {
+  display: block; margin-top: 6px; font-size: 19px; font-weight: 800; letter-spacing: -.02em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rank-mine-right { flex: none; text-align: right; }
+.rank-mine-rank { display: block; font-size: 12px; font-weight: 700; color: var(--on-dark-dim); }
+.rank-mine-points { display: block; margin-top: 2px; font-size: 21px; font-weight: 800; }
+
+.rank-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+
+.rank-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 18px; border-radius: var(--r-lg);
+  background: var(--card); border: 1px solid var(--line);
+  transition: border-color .15s, transform .15s;
+}
+.rank-row:hover { border-color: var(--s300); transform: translateY(-1px); }
+
+/* 내 팀 줄. 배경을 바꾸는 것은 여기뿐이다 — 카드마다 색을 띠면
+   순위 숫자와 점수가 묻힌다. */
+.rank-row[data-mine='true'] {
+  background: linear-gradient(120deg, var(--navy-950) 0%, #3a4a86 100%);
+  border-color: transparent; color: var(--on-dark);
+}
+.rank-row[data-mine='true'] .rank-meta { color: var(--on-dark-dim); }
+.rank-row[data-mine='true'] .rank-num { color: var(--on-dark-dim); }
+
+.rank-num {
+  flex: none; width: 22px; text-align: center;
+  font-size: 15px; font-weight: 800; color: var(--s300);
+  font-variant-numeric: tabular-nums;
+}
+.rank-body { flex: 1; min-width: 0; }
+.rank-name {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 15px; font-weight: 700; letter-spacing: -.01em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rank-star { color: #f5c34b; }
+.rank-tag {
+  flex: none; padding: 2px 7px; border-radius: 6px;
+  background: rgba(248,250,252,.18); font-size: 10px; font-weight: 700;
+}
+.rank-meta { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); }
+.rank-points {
+  flex: none; font-size: 15px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 순위를 보여주지 않는 경우의 안내. 예전 ranking/page.tsx 안에
+   있던 것을 옮겼다 — 화면이 둘로 늘어 파일 안에 두면 두 벌이 된다. */
+.rank-soon {
+  min-height: 58vh; display: grid; place-items: center;
+  padding: 40px 0 24px; text-align: center;
+}
+.rank-soon-inner { max-width: 26rem; }
+.rank-soon-mark {
+  width: 76px; height: 76px; margin: 0 auto 22px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: var(--blue-wash); color: var(--blue);
+}
+.rank-soon-title { font-size: 22px; font-weight: 800; letter-spacing: -.02em; color: var(--s800); }
+.rank-soon-body { margin: 10px 0 0; font-size: 14px; line-height: 1.7; color: var(--muted); }
+.rank-soon-cta { margin-top: 26px; }
+
+/* ── 히어로 랭킹 카드 (시안 9·10·40) ───────────────────── */
+
+.rank-card {
+  display: block; padding: 18px; border-radius: var(--r-lg);
+  background: var(--card); border: 1px solid var(--line);
+  transition: transform .18s, box-shadow .18s;
+}
+.rank-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+
+/* 어두운 판. 왼쪽 카드를 밝게 바꿀 때 이 값만 뒤집으면 된다. */
+.rank-card[data-tone='dark'] {
+  background: linear-gradient(140deg, var(--navy-950) 0%, var(--navy-900) 100%);
+  border-color: transparent; color: var(--on-dark);
+}
+.rank-card[data-tone='dark'] .rank-mini-points { color: var(--on-dark-dim); }
+.rank-card[data-tone='dark'] .rank-go { border-color: rgba(226,232,240,.35); color: var(--on-dark); }
+
+.rank-card-title { font-size: 14px; font-weight: 800; letter-spacing: -.02em; }
+.rank-mini { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 7px; }
+.rank-mini li { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.rank-mini-num { flex: none; width: 10px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.rank-mini-name { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-mini-points { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rank-go {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-top: 14px; padding: 6px 12px; border-radius: 100px;
+  border: 1px solid var(--line-strong); font-size: 12px; font-weight: 600; color: var(--s600);
+}
+
+/* ── 활동 모드 팀 페이지 (시안 31·32) ──────────────────── */
+
+.team-page { padding-top: 18px; padding-bottom: 32px; }
+
+.team-hero {
+  margin-top: 16px; padding: 20px; border-radius: var(--r-lg);
+  background: var(--blue-wash); border: 1px solid rgba(49,82,234,.12);
+}
+.team-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .1em; color: var(--blue); }
+.team-name { margin-top: 6px; font-size: 22px; font-weight: 800; letter-spacing: -.025em; }
+.team-hero .chip-row { margin-top: 10px; }
+.team-rank { margin: 12px 0 0; font-size: 13px; font-weight: 600; color: var(--s500); }
+
+/* 하단 버튼. 고정하지 않고 흐름 안에 둔다 — 위 내용이 짧을 때
+   화면 중간에 떠 있는 것보다 낫고, 점수 내역이 길어져도 스크롤
+   끝에서 만난다. */
+.team-foot {
+  display: grid; grid-template-columns: 1fr; gap: 10px;
+  margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--line);
+}
+.team-foot:has(> * + *) { grid-template-columns: 1fr 1fr; }
+
+/* ── 점수 내역 ─────────────────────────────────────────── */
+
+.score-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.score-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 14px 16px; border-radius: var(--r);
+  background: var(--card); border: 1px solid var(--line);
+}
+.score-body { min-width: 0; }
+.score-label { display: block; font-size: 14px; font-weight: 700; }
+.score-date { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
+.score-reason { display: block; margin-top: 4px; font-size: 12px; color: var(--s500); }
+.score-points {
+  flex: none; font-size: 15px; font-weight: 800; color: var(--blue);
+  font-variant-numeric: tabular-nums;
+}
+/* 감점은 색으로 구분한다. 부호만으로는 훑을 때 놓친다. */
+.score-points[data-minus='true'] { color: var(--danger); }
+
+/* ── 인스타그램 (시안 31·32) ───────────────────────────── */
+
+.ig-box {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 13px 16px; border-radius: var(--r);
+  background: var(--card); border: 1px solid var(--line);
+}
+.ig-handle {
+  display: inline-flex; align-items: center; gap: 8px; min-width: 0;
+  font-size: 14px; font-weight: 600; color: var(--s700);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ig-handle:hover { color: var(--blue); }
+.ig-editbtn { flex: none; padding: 4px 6px; font-size: 13px; color: var(--blue); }
+
+.ig-empty {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 13px 16px; border-radius: var(--r);
+  background: var(--card); border: 1px dashed var(--line-strong);
+  font-size: 14px; color: var(--muted); cursor: pointer;
+}
+.ig-empty:hover { border-color: var(--blue); color: var(--blue); }
+
+.ig-inputrow {
+  display: flex; align-items: center; gap: 6px;
+  padding: 11px 14px; border-radius: var(--r);
+  background: var(--card); border: 1px solid var(--line-strong);
+}
+.ig-inputrow:focus-within { border-color: var(--blue); }
+.ig-at { flex: none; color: var(--muted); font-size: 14px; }
+.ig-input {
+  flex: 1; min-width: 0; border: 0; background: none; outline: none;
+  font-family: inherit; font-size: 14px; color: var(--ink);
+}
+.ig-error { margin: 8px 0 0; font-size: 12.5px; color: var(--danger); line-height: 1.5; }
+.ig-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+

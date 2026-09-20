@@ -10,7 +10,10 @@ import { DetailActions } from '@/components/detail-actions';
 import { LeaveButton } from '@/components/leave-button';
 import { IconArrowLeft, IconPin } from '@/components/ui/icon';
 import { getCurrentUser } from '@/lib/auth/session';
+import { TeamPage } from '@/components/team-page';
 import { getConnectDetail, summarizeResidence } from '@/lib/db/queries/connect-detail';
+import { getRankingMode, getSeasonConfig } from '@/lib/db/queries/season';
+import { getTeamView } from '@/lib/db/queries/ranking';
 import { countFavorites, getFavoriteIds } from '@/lib/db/queries/favorites';
 import { CONDITIONS, DAYS, GOAL_TYPES, isExampleConnect, trackLabel } from '@/lib/connects/options';
 
@@ -43,6 +46,42 @@ export default async function ConnectDetailPage({ params }: Props) {
 
   const c = await getConnectDetail(id, user.id);
   if (!c) notFound();
+
+  /* 팀이 확정되면(D-16 일괄 확정) 이 화면이 답해야 할 질문이 바뀐다.
+     모집 중에는 "들어갈까"라서 소개·조건·남은 자리를 보지만, 확정
+     뒤에는 "우리가 어디까지 했나"라서 점수와 인증을 본다.
+     주소를 새로 파지 않고 여기서 가른다 — 알림·초대 링크가 이미
+     /connects/[id] 를 가리키고 있어, 주소를 나누면 확정 시점에
+     그동안 보낸 링크가 전부 엉뚱한 화면으로 간다(시안 31·32). */
+  if (c.status === 'confirmed') {
+    const [season, mode] = await Promise.all([getSeasonConfig(), getRankingMode()]);
+
+    // 점수 내역은 팀원에게만. 남의 팀 내역을 조회할 이유가 없고,
+    // 볼 일도 없는 인증 조인을 매번 돌릴 이유도 없다.
+    const team = await getTeamView(c.id, { mode, withScores: c.viewer.isMember });
+
+    return (
+      <>
+        <AppBar current="/connects" user={{ id: user.id, name: user.name }} />
+        <TeamPage
+          connectId={c.id}
+          name={c.name}
+          campus={c.campus}
+          track={c.track}
+          capacity={c.capacity}
+          members={c.members}
+          isMine={c.viewer.isMember}
+          isLeader={c.viewer.isLeader}
+          instagram={team.instagram}
+          rank={team.rank}
+          points={team.points}
+          rankingMode={mode}
+          scores={team.scores}
+          showOnline={season.vacation_mode === 'on'}
+        />
+      </>
+    );
+  }
 
   const favIds = await getFavoriteIds(user.id);
   // U-06 정확한 찜 수는 팀장에게만 보여준다.

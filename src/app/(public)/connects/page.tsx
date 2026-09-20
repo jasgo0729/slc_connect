@@ -4,6 +4,9 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { countUnread } from '@/lib/db/queries/notifications';
 import { listConnects } from '@/lib/db/queries/connects';
 import { getFavoriteIds } from '@/lib/db/queries/favorites';
+import { getRankingMode, getSeasonConfig } from '@/lib/db/queries/season';
+import { getMyConfirmedConnectIds, listTopRanking } from '@/lib/db/queries/ranking';
+import { isRecruitClosed } from '@/lib/connects/deadline';
 import { Board } from './board';
 
 export const dynamic = 'force-dynamic';
@@ -40,10 +43,36 @@ function pickFeatured(list: Awaited<ReturnType<typeof listConnects>>) {
   return { c: newest, label: '새로 열림', fresh: true };
 }
 
+/**
+ * 히어로 왼쪽 카드의 목적지(시안 40).
+ *
+ * 모집이 끝나면 MBTI 대신 활동 인증을 건다. 다만 확정된 커넥트가
+ * 없는 사람에게 '인증하러 가기'는 막다른 길이라, 그때는 MBTI를
+ * 그대로 둔다. 두 팀(취미+도전)에 속해 있으면 어느 쪽을 인증할지
+ * 여기서 정할 수 없으므로 내 커넥트 목록으로 보낸다.
+ */
+function certifyHref(myConnectIds: string[]): string | null {
+  if (myConnectIds.length === 0) return null;
+  if (myConnectIds.length === 1) return `/connects/${myConnectIds[0]}`;
+  return '/me';
+}
+
 export default async function ConnectsPage() {
-  const [user, list] = await Promise.all([getCurrentUser(), listConnects({})]);
-  const favIds = user ? await getFavoriteIds(user.id) : new Set<string>();
-  const unread = user ? await countUnread(user.id) : 0;
+  const [user, list, season] = await Promise.all([
+    getCurrentUser(),
+    listConnects({}),
+    getSeasonConfig(),
+  ]);
+
+  const mode = await getRankingMode();
+  const [favIds, unread, myIds, topRanking] = await Promise.all([
+    user ? getFavoriteIds(user.id) : Promise.resolve(new Set<string>()),
+    user ? countUnread(user.id) : Promise.resolve(0),
+    user ? getMyConfirmedConnectIds(user.id) : Promise.resolve([]),
+    listTopRanking(mode, 3),
+  ]);
+
+  const recruitClosed = isRecruitClosed(season.recruit_deadline);
 
   return (
     <>
@@ -54,6 +83,15 @@ export default async function ConnectsPage() {
           featured={pickFeatured(list)}
           loggedIn={!!user}
           favoriteIds={[...favIds]}
+          hero={{
+            certifyHref: recruitClosed ? certifyHref(myIds) : null,
+            ranking: topRanking.map((r) => ({
+              connectId: r.connectId,
+              name: r.name,
+              rank: r.rank,
+              points: r.points,
+            })),
+          }}
         />
       </main>
       <TabBar current="/connects" unread={unread} />
