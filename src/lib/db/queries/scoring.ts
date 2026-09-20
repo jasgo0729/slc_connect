@@ -59,7 +59,8 @@ export async function recalculateConnectScores(
 
   if (!c) return { total: 0, events: [] };
 
-  const rows = await tx
+  /* 이 팀이 올린 인증. */
+  const own = await tx
     .select({
       id: certifications.id,
       activityDate: certifications.activityDate,
@@ -67,21 +68,67 @@ export async function recalculateConnectScores(
       isSocial: certifications.isSocial,
       deliverableScore: certifications.deliverableScore,
       createdAt: certifications.createdAt,
+      crossConnectId: certifications.crossConnectId,
+      // 상대 팀 이름. 근거 문구에만 쓴다.
+      // ⚠️ 서브쿼리는 별칭을 붙이고 양쪽을 모두 수식한다.
+      crossName: sql<string | null>`(
+        SELECT c2.name FROM connects c2 WHERE c2.id = certifications.cross_connect_id
+      )`,
     })
     .from(certifications)
     .where(
       and(eq(certifications.connectId, connectId), eq(certifications.reviewStatus, 'approved')),
     );
 
+  /* CCC — 상대 팀이 올렸고 우리가 함께한 인증.
+     같이 활동해 놓고 올린 쪽만 점수를 받으면, 누가 올릴지를 두고
+     팀끼리 눈치를 보게 된다. 인증은 한 번만 올리는 것이 맞으므로
+     점수는 양쪽에 붙인다.
+
+     인원은 우리 쪽 참여자 수(cross_participant_count)로 센다.
+     §6.3 기준 인원과 §6.5 인원 추가점은 "우리 팀에서 몇 명이
+     갔는가"를 묻는 것이고, 정원도 팀마다 다르다. */
+  const joined = await tx
+    .select({
+      id: certifications.id,
+      activityDate: certifications.activityDate,
+      participantCount: certifications.crossParticipantCount,
+      isSocial: certifications.isSocial,
+      createdAt: certifications.createdAt,
+      hostName: connects.name,
+    })
+    .from(certifications)
+    .innerJoin(connects, eq(certifications.connectId, connects.id))
+    .where(
+      and(
+        eq(certifications.crossConnectId, connectId),
+        eq(certifications.reviewStatus, 'approved'),
+      ),
+    );
+
   const events = calculateScores(
-    rows.map((r) => ({
-      id: r.id,
-      activityDate: r.activityDate,
-      participantCount: r.participantCount,
-      isSocial: r.isSocial,
-      deliverableScore: r.deliverableScore,
-      createdAt: r.createdAt.getTime(),
-    })),
+    [
+      ...own.map((r) => ({
+        id: r.id,
+        activityDate: r.activityDate,
+        participantCount: r.participantCount,
+        isSocial: r.isSocial,
+        deliverableScore: r.deliverableScore,
+        createdAt: r.createdAt.getTime(),
+        crossWith: r.crossConnectId ? r.crossName : null,
+      })),
+      ...joined.map((r) => ({
+        id: r.id,
+        activityDate: r.activityDate,
+        participantCount: r.participantCount ?? 0,
+        isSocial: r.isSocial,
+        // §6.6 산출물은 올린 팀에만 준다. 링크가 하나뿐이고 만든
+        // 주체도 그 팀이다. 양쪽에 주면 전체 5회 한도가 두 배가 된다.
+        deliverableScore: null,
+        createdAt: r.createdAt.getTime(),
+        crossWith: r.hostName,
+      })),
+    ],
     c.capacity,
   );
 

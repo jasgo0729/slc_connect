@@ -168,7 +168,11 @@ export function Board({
                   {hero.ranking.map((r, i) => (
                     <li key={r.connectId}>
                       <span className="rank-mini-num">{r.rank ?? i + 1}</span>
-                      <span className="rank-mini-name">{r.name}</span>
+                      {/* 좁은 화면에서는 잘린다. 길게 눌렀을 때
+                          전체 이름이 보이도록 남겨 둔다. */}
+                      <span className="rank-mini-name" title={r.name}>
+                        {r.name}
+                      </span>
                       {r.points !== null && (
                         <span className="rank-mini-points">{r.points}점</span>
                       )}

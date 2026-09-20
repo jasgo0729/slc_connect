@@ -63,7 +63,12 @@ export function ReviewList({ items }: { items: Item[] }) {
   const [grading, setGrading] = useState<Item | null>(null);
   const [social, setSocial] = useState<string[]>([]);
   /** 방금 무엇이 붙었는지. 규칙이 복잡해 결과를 바로 못 본다. */
-  const [done, setDone] = useState<{ name: string; awarded: number; total: number } | null>(null);
+  const [done, setDone] = useState<{
+    name: string;
+    awarded: number;
+    total: number;
+    cross?: { name: string; awarded: number; total: number };
+  } | null>(null);
   const [, start] = useTransition();
 
   const shown = items.filter((i) => !hidden.includes(i.id));
@@ -87,7 +92,12 @@ export function ReviewList({ items }: { items: Item[] }) {
         return;
       }
       if (approve) {
-        setDone({ name: item.connectName, awarded: r.awarded ?? 0, total: r.total ?? 0 });
+        setDone({
+          name: item.connectName,
+          awarded: r.awarded ?? 0,
+          total: r.total ?? 0,
+          cross: r.cross,
+        });
       }
     });
 
@@ -115,6 +125,14 @@ export function ReviewList({ items }: { items: Item[] }) {
       {done && (
         <Notice>
           {done.name} · 이 인증으로 {done.awarded}점 · 팀 누적 {done.total}점
+          {/* CCC 는 양쪽에 붙는다. 상대 팀까지 보여야 확인이 된다. */}
+          {done.cross && (
+            <>
+              <br />
+              {done.cross.name} · 이 인증으로 {done.cross.awarded}점 · 팀 누적{' '}
+              {done.cross.total}점
+            </>
+          )}
         </Notice>
       )}
 

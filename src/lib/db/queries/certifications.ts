@@ -263,6 +263,13 @@ export type ReviewResult =
       awarded: number;
       /** 재계산 뒤 이 커넥트의 총점. */
       total: number;
+      /**
+       * CCC 였다면 상대 팀에도 붙은 점수.
+       *
+       * 검수자에게 보여준다 — 양쪽에 들어갔는지 눈으로 확인할
+       * 방법이 달리 없다.
+       */
+      cross?: { name: string; awarded: number; total: number };
     }
   | { ok: false; reason: string };
 
@@ -289,6 +296,10 @@ export async function reviewCertification(
         connectId: certifications.connectId,
         submittedBy: certifications.submittedBy,
         connectName: connects.name,
+        crossConnectId: certifications.crossConnectId,
+        crossName: sql<string | null>`(
+          SELECT c2.name FROM connects c2 WHERE c2.id = certifications.cross_connect_id
+        )`,
       })
       .from(certifications)
       .innerJoin(connects, eq(certifications.connectId, connects.id))
@@ -329,18 +340,32 @@ export async function reviewCertification(
        반려일 때도 돌린다. 이미 승인했던 건을 나중에 되돌리는 길이
        생기면 그때 점수가 저절로 빠져야 한다. 멱등이라 지금 돌려도
        결과는 같다. */
+    const sumFor = (r: { events: { certificationId: string; finalPoints: number }[] }) =>
+      r.events.filter((e) => e.certificationId === certId).reduce((n, e) => n + e.finalPoints, 0);
+
     const recalc = await recalculateConnectScores(tx, c.connectId, adminId);
-    const awarded = recalc.events
-      .filter((e) => e.certificationId === certId)
-      .reduce((n, e) => n + e.finalPoints, 0);
+
+    /* CCC 는 양쪽 팀의 활동이다. 상대 팀도 다시 계산해야 점수가
+       붙는다 — 이걸 빠뜨리면 올린 팀만 점수를 받고, 누가 올릴지를
+       두고 팀끼리 눈치를 보게 된다. */
+    let cross: { name: string; awarded: number; total: number } | undefined;
+    if (c.crossConnectId) {
+      const r = await recalculateConnectScores(tx, c.crossConnectId, adminId);
+      cross = {
+        name: c.crossName ?? '상대 팀',
+        awarded: sumFor(r),
+        total: r.total,
+      };
+    }
 
     return {
       ok: true,
       connectId: c.connectId,
       submittedBy: c.submittedBy,
       connectName: c.connectName,
-      awarded,
+      awarded: sumFor(recalc),
       total: recalc.total,
+      cross,
     } as const;
   });
 }

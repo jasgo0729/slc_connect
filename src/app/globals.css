@@ -2104,3 +2104,46 @@ a.utable-row:hover { background: var(--blue-wash); }
 .adjust-confirm { display: flex; align-items: center; gap: 6px; }
 
 .score-board-recalc { flex: none; padding: 4px 6px; font-size: 12px; }
+
+/* =========================================================
+   히어로 카드 — 모바일 치수 (시안 9·10·11·40)
+
+   오른쪽 카드가 인기 커넥트(제목+메타 두 줄)에서 랭킹(제목+순위
+   세 줄+버튼)으로 바뀌면서 내용이 늘었다. 2열 배치는 시안 그대로
+   두고 안쪽 치수만 조인다.
+
+   360px 화면 기준 카드 안쪽 폭:
+     (360 - 좌우 여백 40 - 칸 사이 10) / 2 - 안쪽 여백 28 ≒ 127px
+   순위 한 줄은 번호(8) + 이름 + 점수(28) + 간격(12) 이므로
+   이름에 약 79px 이 남는다. 여기까지 와야 이름이 잘리지 않는다.
+   ========================================================= */
+
+@media (max-width: 899px) {
+  /* 랭킹 카드가 더 많은 줄을 담는다. 왼쪽보다 조금 넓게 준다. */
+  .hero-cards { grid-template-columns: 1fr 1.12fr; gap: 10px; }
+
+  .mbti-card, .rank-card { padding: 14px; overflow: hidden; }
+
+  .mbti-eyebrow { font-size: 9.5px; letter-spacing: .1em; }
+  .mbti-title { margin-top: 6px; font-size: 14.5px; line-height: 1.35; }
+
+  .rank-card-title { font-size: 12.5px; }
+  .rank-mini { margin-top: 9px; gap: 5px; }
+  .rank-mini li { gap: 6px; font-size: 11px; }
+  .rank-mini-num { width: 8px; }
+  .rank-mini-points { font-size: 10.5px; }
+
+  /* 버튼 문구가 줄바꿈되면 카드 아래가 들쭉날쭉해진다. */
+  .mbti-go, .rank-go {
+    margin-top: 10px; padding: 5px 9px; gap: 4px;
+    font-size: 11px; white-space: nowrap;
+  }
+}
+
+/* 아주 좁은 화면(구형 SE 등)에서는 2열을 포기한다. 여기서는
+   조여 봐야 팀 이름이 두세 글자만 남는다. */
+@media (max-width: 359px) {
+  .hero-cards { grid-template-columns: 1fr; }
+  .mbti-card, .rank-card { padding: 16px; }
+  .rank-mini li { font-size: 12.5px; }
+}

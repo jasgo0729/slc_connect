@@ -33,6 +33,15 @@ export interface ScorableCert {
   deliverableScore: number | null;
   /** 같은 날 여러 건일 때의 순서. 올린 시각. */
   createdAt: number;
+  /**
+   * CCC 활동이면 함께한 상대 팀 이름.
+   *
+   * 점수 계산에는 쓰지 않는다 — CCC 도 그 팀에게는 그냥 활동
+   * 한 번이고, §6.2 의 주 2회를 함께 쓴다. 근거 문구에만 넣는다.
+   * 내역에 "9/21 활동"만 있으면 팀이 무엇으로 받은 점수인지
+   * 알 수 없다.
+   */
+  crossWith?: string | null;
 }
 
 export interface ComputedEvent {
@@ -54,6 +63,13 @@ export interface ComputedEvent {
 function shortDate(date: string): string {
   const p = date.split('-');
   return p.length === 3 ? `${Number(p[1])}/${Number(p[2])}` : date;
+}
+
+function activityReason(c: ScorableCert): string {
+  const head = c.crossWith
+    ? `${shortDate(c.activityDate)} ${c.crossWith}와 함께`
+    : `${shortDate(c.activityDate)} 활동`;
+  return `${head} · ${c.participantCount}명 참여`;
 }
 
 export function calculateScores(
@@ -112,7 +128,7 @@ export function calculateScores(
           basePoints: SCORING.basePoints,
           finalPoints: SCORING.basePoints,
           weekStart,
-          reason: `${shortDate(c.activityDate)} 활동 · ${c.participantCount}명 참여`,
+          reason: activityReason(c),
         });
       } else {
         // §6.4 주 2회 초과분. 친목 활동도 여기서 인정된다.
@@ -124,7 +140,9 @@ export function calculateScores(
           weekStart,
           reason: c.isSocial
             ? `${shortDate(c.activityDate)} 친목 활동`
-            : `${shortDate(c.activityDate)} 추가 활동`,
+            : c.crossWith
+              ? `${shortDate(c.activityDate)} ${c.crossWith}와 함께 (추가)`
+              : `${shortDate(c.activityDate)} 추가 활동`,
         });
       }
 
