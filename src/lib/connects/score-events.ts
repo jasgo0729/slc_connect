@@ -12,12 +12,12 @@
 
 /** DB CHECK 'score_event_type_chk' 와 같은 목록이어야 한다. */
 export const SCORE_EVENT_LABELS: Record<string, string> = {
-  base_activity: '활동 인증',
-  excess_activity: '추가 활동',
-  headcount_bonus: '전원 참여',
-  deliverable_bonus: '산출물 인증',
-  cross_connect: 'CCC 활동',
-  exam_special: '시험 기간 특별',
+  base_activity: '활동 인증',      // §6.2 만남 1회 10점
+  excess_activity: '추가 활동',    // §6.4 주 2회 초과분 2점
+  headcount_bonus: '인원 추가점',  // §6.5 6명 이상 4점
+  deliverable_bonus: '산출물',     // §6.6 0/5/10/15, 전체 5회
+  cross_connect: 'CCC 활동',       // §6 에 별도 점수 규칙 없음 — 현재 미사용
+  exam_special: '시험 기간 특별',  // 규칙 미정 — 현재 미사용
   manual_adjustment: '운영진 조정',
 };
 
@@ -57,11 +57,14 @@ export function formatPoints(points: number): string {
 /**
  * 랭킹의 집계 기간.
  *
- * 지금은 누적 총점이다. 시안 문구는 "이번 주"였으나 그대로 쓰지
- * 않았다 — score_events.week_start 는 활동일이 아니라 **검수
- * 시점**에 확정해 저장한다(G-18). 검수가 하루라도 밀리면 지난주
- * 활동이 이번 주 합계에 잡혀 문구가 사실과 어긋난다.
- * 점수 규칙이 확정되고 주차 귀속 방식이 정해지면 이 상수와
- * lib/db/queries/ranking.ts 의 집계 범위만 함께 바꾼다.
+ * 누적 총점이다. 규칙서 §6.12 가 랭킹보드를 "각 커넥트의 점수"로
+ * 정의하고, 매주 일요일에 그 값을 갱신·공유한다고 했다. 주간 점수만
+ * 따로 세우는 화면은 규칙서에 없다.
+ *
+ * 앞서 "이번 주"를 쓰지 않은 이유(week_start 가 검수 시점에 정해져
+ * 활동 주와 어긋난다)는 해소됐다. §6.1 에 따라 주차는 이제 활동일
+ * 기준으로 계산된다(lib/scoring/week.ts). 주간 랭킹이 필요해지면
+ * lib/db/queries/ranking.ts 의 points 서브쿼리에 week_start 조건을
+ * 넣고 이 문구를 바꾸면 된다.
  */
 export const RANKING_PERIOD_LABEL = '전체';

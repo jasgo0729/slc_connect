@@ -1,6 +1,8 @@
 import { and, asc, desc, eq, isNull, ne, sql } from 'drizzle-orm';
 import { db } from '../client';
 import { CERT_SPECS, isCertifyExpired, type CertType } from '@/lib/connects/certification';
+import { isDeliverableGrade } from '@/lib/scoring/rules';
+import { recalculateConnectScores } from './scoring';
 import {
   certificationParticipants,
   certifications,
@@ -169,6 +171,12 @@ export interface CertRow {
   rejectReason: string | null;
   submittedByName: string;
   createdAt: Date;
+  /** §6.4 검수에서 표시한 친목 활동 여부. */
+  isSocial: boolean;
+  /** §6.6 검수에서 매긴 산출물 등급. null 이면 평가하지 않았다. */
+  deliverableScore: number | null;
+  /** §6.3 기준 인원 판정에 쓰는 정원. 검수 화면이 미달을 알려준다. */
+  capacity: number;
 }
 
 const BASE = {
@@ -189,6 +197,9 @@ const BASE = {
   rejectReason: certifications.rejectReason,
   submittedByName: roster.name,
   createdAt: certifications.createdAt,
+  isSocial: certifications.isSocial,
+  deliverableScore: certifications.deliverableScore,
+  capacity: connects.capacity,
 };
 
 /** 커넥트의 인증 목록. 팀원이 본다. */
@@ -243,14 +254,32 @@ export async function getParticipants(certId: string): Promise<string[]> {
 /* ── 검수 ──────────────────────────────────────────────── */
 
 export type ReviewResult =
-  | { ok: true; connectId: string; submittedBy: string; connectName: string }
+  | {
+      ok: true;
+      connectId: string;
+      submittedBy: string;
+      connectName: string;
+      /** 이 인증에 붙은 점수. 승인 직후 운영진에게 보여준다. */
+      awarded: number;
+      /** 재계산 뒤 이 커넥트의 총점. */
+      total: number;
+    }
   | { ok: false; reason: string };
+
+/** §6.4·§6.6 검수자가 함께 정하는 것. 승인할 때만 쓰인다. */
+export interface ReviewOptions {
+  /** 주제와 무관한 친목 활동으로 표시. 기본 점수 대신 초과분(2점)만 받는다. */
+  isSocial?: boolean;
+  /** 산출물 등급 0/5/10/15. undefined 면 손대지 않는다. */
+  deliverableScore?: number | null;
+}
 
 export async function reviewCertification(
   adminId: string,
   certId: string,
   approve: boolean,
   reason?: string,
+  opts: ReviewOptions = {},
 ): Promise<ReviewResult> {
   return db.transaction(async (tx) => {
     const rows = await tx
@@ -271,6 +300,15 @@ export async function reviewCertification(
     if (!c) return { ok: false, reason: '인증을 찾을 수 없어요.' } as const;
     if (c.status !== 'pending') return { ok: false, reason: '이미 처리된 인증이에요.' } as const;
 
+    // 등급은 규칙서에 있는 값만 받는다(§6.6). 화면에서 고르게
+    // 하지만 액션은 폼을 거치지 않고 부를 수 있다.
+    const grade =
+      opts.deliverableScore === undefined || opts.deliverableScore === null
+        ? undefined
+        : isDeliverableGrade(opts.deliverableScore)
+          ? opts.deliverableScore
+          : undefined;
+
     await tx
       .update(certifications)
       .set({
@@ -278,16 +316,31 @@ export async function reviewCertification(
         reviewedBy: adminId,
         reviewedAt: new Date(),
         rejectReason: approve ? null : (reason ?? null),
+        ...(approve ? { isSocial: opts.isSocial === true } : {}),
+        ...(approve && grade !== undefined ? { deliverableScore: grade } : {}),
       })
       .where(eq(certifications.id, certId));
 
-    // 점수 부여는 아직 붙이지 않는다. 계산 방식이 확정되면
-    // 승인 시점에 score_events 를 쌓으면 된다.
+    /* 규칙서 §6 의 점수를 여기서 붙인다.
+       한 건을 더하는 것이 아니라 이 커넥트의 점수를 통째로 다시
+       계산한다 — 승인 순서가 아니라 활동일 순서로 §6.2 의 주 2회를
+       매겨야 하기 때문이다. 자세한 이유는 queries/scoring.ts 참고.
+
+       반려일 때도 돌린다. 이미 승인했던 건을 나중에 되돌리는 길이
+       생기면 그때 점수가 저절로 빠져야 한다. 멱등이라 지금 돌려도
+       결과는 같다. */
+    const recalc = await recalculateConnectScores(tx, c.connectId, adminId);
+    const awarded = recalc.events
+      .filter((e) => e.certificationId === certId)
+      .reduce((n, e) => n + e.finalPoints, 0);
+
     return {
       ok: true,
       connectId: c.connectId,
       submittedBy: c.submittedBy,
       connectName: c.connectName,
+      awarded,
+      total: recalc.total,
     } as const;
   });
 }

@@ -446,6 +446,24 @@ export const certifications = pgTable(
     /** 인스타그램·네이버 카페 게시물 등 산출물 링크. 선택. */
     outputLink: text('output_link'),
 
+    /**
+     * §6.4 주제와 무관한 친목 활동.
+     *
+     * 기본 점수(10점)를 받지 못하고 초과분(2점)으로만 인정된다.
+     * 팀이 스스로 고르게 하지 않고 검수에서 표시한다 — 자기
+     * 활동을 친목으로 신고할 유인이 없다.
+     */
+    isSocial: boolean('is_social').notNull().default(false),
+
+    /**
+     * §6.6 산출물 등급. 0 / 5 / 10 / 15.
+     *
+     * null 은 "평가하지 않음"이고 0 은 "보고 반려함"이다. 둘을
+     * 구분해야 산출물 링크가 있는데 검수에서 지나친 건을 찾을 수 있다.
+     * 전체 기간 5회 한도는 점수를 줄 때 계산한다(lib/scoring).
+     */
+    deliverableScore: smallint('deliverable_score'),
+
     // G-02 크로스 커넥트. 전용 창구 없이 이 항목으로 처리.
     crossConnectId: uuid('cross_connect_id').references(() => connects.id),
     ownParticipantCount: smallint('own_participant_count').notNull(),
