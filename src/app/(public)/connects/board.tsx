@@ -98,6 +98,12 @@ export function Board({
   const active = Boolean(filters.status || filters.campus || filters.openOnly);
   const sortLabel = SORT_OPTS.find((o) => o.value === (filters.sort ?? ''))?.label ?? '최신순';
 
+  // 히어로에 실제로 그려지는 카드 수.
+  // 왼쪽은 항상 한 장이다(인증 아니면 MBTI). 오른쪽은 랭킹이 비면
+  // 인기 커넥트가 대신 들어가는데, 열린 커넥트가 하나도 없으면
+  // 그마저 없다 — 그때만 한 장이 된다.
+  const heroCardCount = 1 + (hero.ranking.length > 0 || featured ? 1 : 0);
+
   const set = (patch: Partial<Filters>) => setDraft((d) => ({ ...d, ...patch }));
   const openFilter = () => {
     setDraft(filters);
@@ -131,28 +137,40 @@ export function Board({
             )}
           </h1>
 
-          <div className="hero-cards">
+          {/* 카드가 하나만 남는 경우가 생긴다(모집 중이라 인증 카드가
+              없을 때). 2열 그대로 두면 한 칸이 통째로 비어 화면이
+              왼쪽으로 쏠린다. 수를 세어 CSS 가 배치를 고르게 한다. */}
+          <div className="hero-cards" data-count={heroCardCount}>
+            {/* 히어로 왼쪽은 '지금 해야 할 일'이다. 인증할 확정 커넥트가
+                있으면 활동 인증, 없으면 MBTI 로 보낸다.
+
+                클래스 이름이 .act-* 인 것은 한때 이 자리가 활동 인증
+                전용이었기 때문이다. 지금은 두 카드가 같은 껍데기를
+                쓴다. 이름만 남은 흔적이니 .mbti-* 로 되돌리지 말 것 —
+                globals.css 아래쪽 MBTI 결과 화면에 .mbti-title 이
+                범위 제한 없이 다시 정의돼 있어서, 되돌리면 그 규칙이
+                히어로 제목을 22px 로 덮는다. */}
             {hero.certifyHref ? (
-              <Link href={hero.certifyHref} className="mbti-card">
-                <p className="mbti-eyebrow">활동 인증</p>
-                <p className="mbti-title">
+              <Link href={hero.certifyHref} className="act-card">
+                <p className="act-eyebrow">활동 인증</p>
+                <p className="act-title">
                   이번 주 활동
                   <br />
                   인증하기
                 </p>
-                <span className="mbti-go">
+                <span className="act-go">
                   인증하러 가기 <IconArrowRight size={13} />
                 </span>
               </Link>
             ) : (
-              <Link href="/mbti" className="mbti-card">
-                <p className="mbti-eyebrow">CONNECT MBTI</p>
-                <p className="mbti-title">
+              <Link href="/mbti" className="act-card">
+                <p className="act-eyebrow">CONNECT MBTI</p>
+                <p className="act-title">
                   성향으로 맞는
                   <br />
                   커넥트 찾기
                 </p>
-                <span className="mbti-go">
+                <span className="act-go">
                   검사 시작하기 <IconArrowRight size={13} />
                 </span>
               </Link>
