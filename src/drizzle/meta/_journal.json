@@ -50,6 +50,13 @@
       "when": 1789811873351,
       "tag": "0006_volatile_grey_gargoyle",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789896093753,
+      "tag": "0007_mixed_forge",
+      "breakpoints": true
     }
   ]
 }
