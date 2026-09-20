@@ -1,4 +1,4 @@
-import { SCORING, SOCIAL_WEEKLY_LIMIT, minParticipants } from './rules';
+import { CROSS, SCORING, SOCIAL_WEEKLY_LIMIT, minParticipants } from './rules';
 import { resolveScoringWeek } from './week';
 
 /**
@@ -42,6 +42,18 @@ export interface ScorableCert {
    * 알 수 없다.
    */
   crossWith?: string | null;
+
+  /**
+   * §7.7 크로스 커넥트 챌린지.
+   *
+   * true 면 취미 트랙 규칙(§6)을 통째로 건너뛴다. 기본 점수도,
+   * 주 2회 한도도, 기준 인원도, 인원 추가점도, 산출물도 적용되지
+   * 않는다. CCC 는 §7.7 의 자기 몫 계산만 받는다.
+   */
+  isCross?: boolean;
+
+  /** CCC 에서 상대 팀 참석 인원. 성립 요건(합산 5명) 판정에 쓴다. */
+  partnerCount?: number;
 }
 
 export interface ComputedEvent {
@@ -51,7 +63,8 @@ export interface ComputedEvent {
     | 'base_activity'
     | 'excess_activity'
     | 'headcount_bonus'
-    | 'deliverable_bonus';
+    | 'deliverable_bonus'
+    | 'cross_connect';
   basePoints: number;
   finalPoints: number;
   weekStart: string;
@@ -85,10 +98,16 @@ export function calculateScores(
 
   const events: ComputedEvent[] = [];
 
-  /* ── 주 단위: 기본 · 초과 · 인원 추가 ─────────────────── */
+  /* CCC 는 여기서 완전히 갈라진다(§7.7).
+     같은 목록에 두면 CCC 한 번이 §6.2 의 주 2회 중 한 자리를
+     차지해 버린다. 두 규칙은 서로의 한도를 건드리지 않는다. */
+  const crossCerts = sorted.filter((c) => c.isCross);
+  const hobbyCerts = sorted.filter((c) => !c.isCross);
+
+  /* ── 주 단위: 기본 · 초과 · 인원 추가 (§6, 취미 트랙) ─── */
 
   const byWeek = new Map<string, ScorableCert[]>();
-  for (const c of sorted) {
+  for (const c of hobbyCerts) {
     const w = resolveScoringWeek(c.activityDate);
     const list = byWeek.get(w);
     if (list) list.push(c);
@@ -171,7 +190,7 @@ export function calculateScores(
   // 0점(반려)은 이벤트를 만들지 않는다. 0점 행이 쌓이면 내역이
   // 길어지기만 하고 팀이 볼 것이 없다.
   let awarded = 0;
-  for (const c of sorted) {
+  for (const c of hobbyCerts) {
     if (awarded >= SCORING.deliverableTotalLimit) break;
     const grade = c.deliverableScore;
     if (grade === null || grade <= 0) continue;
@@ -185,6 +204,55 @@ export function calculateScores(
       weekStart: resolveScoringWeek(c.activityDate),
       reason: `${shortDate(c.activityDate)} 산출물 (${awarded}/${SCORING.deliverableTotalLimit}회)`,
     });
+  }
+
+  /* ── 크로스 커넥트 챌린지 (§7.7) ──────────────────────── */
+
+  const crossByWeek = new Map<string, ScorableCert[]>();
+  for (const c of crossCerts) {
+    const w = resolveScoringWeek(c.activityDate);
+    const list = crossByWeek.get(w);
+    if (list) list.push(c);
+    else crossByWeek.set(w, [c]);
+  }
+
+  for (const [weekStart, week] of crossByWeek) {
+    // 주간 상한 20점. 먼저 한 활동부터 채운다.
+    let left = CROSS.weeklyLimit;
+
+    for (const c of week) {
+      if (left <= 0) break;
+
+      // 첫 만남 특례 미적용(§7.7). 주제와 무관한 CCC 는 인정하지
+      // 않는다 — 멤버를 조금씩 바꾸면 매번 첫 만남이 되어 판정이
+      // 불가능하다는 것이 규칙서의 이유다.
+      if (c.isSocial) continue;
+
+      // 성립 요건: 양 팀 합산 5명 이상.
+      const total = c.participantCount + (c.partnerCount ?? 0);
+      if (total < CROSS.minTotalParticipants) continue;
+
+      // 배점: 자기 팀 인원 1명당 5점.
+      const full = c.participantCount * CROSS.pointsPerMember;
+      const points = Math.min(full, left);
+      if (points <= 0) continue;
+      left -= points;
+
+      const who = c.crossWith ? `${c.crossWith}와 함께` : 'CCC 활동';
+      events.push({
+        certificationId: c.id,
+        eventType: 'cross_connect',
+        basePoints: full,
+        finalPoints: points,
+        weekStart,
+        // 깎였으면 그 사실을 남긴다. 아니면 왜 15점이 아니라 5점인지
+        // 팀이 알 수 없다.
+        reason:
+          points < full
+            ? `${shortDate(c.activityDate)} ${who} · ${c.participantCount}명 참여 (주간 상한 ${CROSS.weeklyLimit}점)`
+            : `${shortDate(c.activityDate)} ${who} · ${c.participantCount}명 참여`,
+      });
+    }
   }
 
   return events;

@@ -68,7 +68,9 @@ export async function recalculateConnectScores(
       isSocial: certifications.isSocial,
       deliverableScore: certifications.deliverableScore,
       createdAt: certifications.createdAt,
+      activityType: certifications.activityType,
       crossConnectId: certifications.crossConnectId,
+      partnerCount: certifications.crossParticipantCount,
       // 상대 팀 이름. 근거 문구에만 쓴다.
       // ⚠️ 서브쿼리는 별칭을 붙이고 양쪽을 모두 수식한다.
       crossName: sql<string | null>`(
@@ -93,6 +95,7 @@ export async function recalculateConnectScores(
       id: certifications.id,
       activityDate: certifications.activityDate,
       participantCount: certifications.crossParticipantCount,
+      partnerCount: certifications.ownParticipantCount,
       isSocial: certifications.isSocial,
       createdAt: certifications.createdAt,
       hostName: connects.name,
@@ -116,17 +119,23 @@ export async function recalculateConnectScores(
         deliverableScore: r.deliverableScore,
         createdAt: r.createdAt.getTime(),
         crossWith: r.crossConnectId ? r.crossName : null,
+        // §7.7 — CCC 는 취미 트랙 규칙을 통째로 비껴간다.
+        isCross: r.activityType === 'cross',
+        partnerCount: r.partnerCount ?? 0,
       })),
       ...joined.map((r) => ({
         id: r.id,
         activityDate: r.activityDate,
         participantCount: r.participantCount ?? 0,
         isSocial: r.isSocial,
-        // §6.6 산출물은 올린 팀에만 준다. 링크가 하나뿐이고 만든
-        // 주체도 그 팀이다. 양쪽에 주면 전체 5회 한도가 두 배가 된다.
+        // §7.7 은 산출물 추가점을 두지 않는다. 배점이 "자기 팀 인원
+        // 1명당 5점"으로 확정돼 있다.
         deliverableScore: null,
         createdAt: r.createdAt.getTime(),
         crossWith: r.hostName,
+        // 상대가 올린 인증은 언제나 CCC 다(cross_connect_id 가 있다).
+        isCross: true,
+        partnerCount: r.partnerCount,
       })),
     ],
     c.capacity,

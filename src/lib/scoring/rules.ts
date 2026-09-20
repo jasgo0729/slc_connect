@@ -67,6 +67,26 @@ export function minParticipants(capacity: number): number {
 export const SOCIAL_WEEKLY_LIMIT: number | null = null;
 
 /**
+ * §7.7 크로스 커넥트 챌린지(CCC).
+ *
+ * 취미 트랙(§6)과 별개의 규칙이다. 기본 10점도, 주 2회 한도도,
+ * 기준 인원(§6.3)도, 인원 추가점(§6.5)도 적용되지 않는다.
+ * 두 규칙을 섞으면 같은 활동이 양쪽 한도를 동시에 먹는다.
+ *
+ * 성립 요건은 "양 팀 합산" 이지만 배점은 "자기 팀 인원" 이다.
+ * A 3명 · B 2명이면 합산 5명으로 성립하고, A 는 15점 B 는 10점을
+ * 받는다. 한쪽만 많이 와도 상대가 적으면 성립하지 않는다.
+ */
+export const CROSS = {
+  /** 양 팀 합산 최소 인원. 미달이면 점수가 없다. */
+  minTotalParticipants: 5,
+  /** 자기 팀 참석 인원 1명당. */
+  pointsPerMember: 5,
+  /** 한 팀이 CCC 로 한 주에 얻을 수 있는 최대 점수. */
+  weeklyLimit: 20,
+} as const;
+
+/**
  * 수동 정정의 한 번 한도.
  *
  * 규칙서에 없는 값이다. 오타를 막으려고 둔다 — 10을 넣으려다

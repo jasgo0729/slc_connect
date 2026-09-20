@@ -5,7 +5,7 @@ import {
   listRecentScoreEvents,
   listScoreBoard,
 } from '@/lib/db/queries/scoring';
-import { SCORING } from '@/lib/scoring/rules';
+import { CROSS, SCORING } from '@/lib/scoring/rules';
 import { formatWeek } from '@/lib/scoring/week';
 import { scoreEventLabel } from '@/lib/connects/score-events';
 import { RecalcButton, RowRecalc } from './recalc-button';
@@ -45,6 +45,12 @@ export default async function AdminScoresPage() {
           {SCORING.dailyBaseLimit}회 · 초과분 {SCORING.excessPoints}점 ·{' '}
           {SCORING.headcountThreshold}명 이상 {SCORING.headcountBonus}점(주{' '}
           {SCORING.headcountWeeklyLimit}회) · 산출물 최대 {SCORING.deliverableTotalLimit}회
+        </p>
+        {/* §7.7 은 별도 규칙이다. 한 줄로 붙여 두면 취미 트랙 한도가
+            CCC 에도 걸리는 것처럼 읽힌다. */}
+        <p className="field-hint" style={{ marginTop: 6 }}>
+          CCC(§7.7) — 양 팀 합산 {CROSS.minTotalParticipants}명 이상 · 자기 팀 1명당{' '}
+          {CROSS.pointsPerMember}점 · 주 {CROSS.weeklyLimit}점까지. 취미 트랙 한도와 별개예요.
         </p>
         <RecalcButton />
       </section>

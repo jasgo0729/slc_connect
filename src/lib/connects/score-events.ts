@@ -16,7 +16,7 @@ export const SCORE_EVENT_LABELS: Record<string, string> = {
   excess_activity: '추가 활동',    // §6.4 주 2회 초과분 2점
   headcount_bonus: '인원 추가점',  // §6.5 6명 이상 4점
   deliverable_bonus: '산출물',     // §6.6 0/5/10/15, 전체 5회
-  cross_connect: 'CCC 활동',       // §6 에 별도 점수 규칙 없음 — 현재 미사용
+  cross_connect: 'CCC 활동',       // §7.7 자기 팀 인원 1명당 5점, 주 20점 상한
   exam_special: '시험 기간 특별',  // 규칙 미정 — 현재 미사용
   manual_adjustment: '운영진 조정',
 };
