@@ -6,17 +6,8 @@ import { requireAdmin } from '@/lib/auth/session';
 import { reviewCertification, type ReviewOptions } from '@/lib/db/queries/certifications';
 import { notifyCertificationReviewed } from '@/lib/notify/send';
 
-/**
- * G-05 인증 검수.
- *
- * 주 60~90건이 이곳을 지난다. 한 건에 클릭 하나로 끝나야 한다.
- */
-export const REJECT_REASONS = [
-  '사진에 참여자가 보이지 않아요.',
-  '활동 내용이 확인되지 않아요.',
-  '이미 인증한 활동과 같아 보여요.',
-  '커넥트 활동으로 보기 어려워요.',
-] as const;
+import { CERT_REJECT_REASONS } from '@/lib/connects/cert-reject-reasons';
+// export const REJECT_REASONS = [...]  ← 삭제
 
 /**
  * 승인할 때 함께 정하는 것 (규칙서 §6.4·§6.6).
@@ -39,7 +30,7 @@ export async function reviewCertAction(
     redirect('/connects');
   }
 
-  const text = approve ? undefined : (reason ?? REJECT_REASONS[0]);
+  const text = approve ? undefined : (reason ?? CERT_REJECT_REASONS[0]);
   const r = await reviewCertification(adminId, certId, approve, text, opts);
   if (!r.ok) return { error: r.reason };
 

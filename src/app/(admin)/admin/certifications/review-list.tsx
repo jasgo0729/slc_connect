@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { Notice } from '@/components/ui/notice';
 import { Sheet } from '@/components/ui/sheet';
 import { DELIVERABLE_GRADES, minParticipants } from '@/lib/scoring/rules';
-import { REJECT_REASONS, reviewCertAction } from './actions';
+import { reviewCertAction } from './actions';
+import { CERT_REJECT_REASONS } from '@/lib/connects/cert-reject-reasons';
 
 /**
  * 검수 목록.
@@ -262,7 +263,7 @@ export function ReviewList({ items }: { items: Item[] }) {
         <p className="sheet-sub" style={{ textAlign: 'center', marginBottom: 16 }}>
           고른 사유가 올린 사람에게 그대로 전달돼요.
         </p>
-        {REJECT_REASONS.map((r) => (
+        {CERT_REJECT_REASONS.map((r) => (
           <button
             key={r}
             type="button"
