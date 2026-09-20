@@ -17,6 +17,7 @@ const NAV = [
   { href: '/admin/connects', label: '도전 확인' },
   { href: '/admin/connects/all', label: '커넥트' },
   { href: '/admin/certifications', label: '인증 검수' },
+  { href: '/admin/scores', label: '점수' },
   { href: '/admin/members', label: '인원' },
   { href: '/admin/members/all', label: '가입자' },
   { href: '/admin/notify', label: '공지' },
