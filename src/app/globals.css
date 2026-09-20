@@ -2056,3 +2056,51 @@ a.utable-row:hover { background: var(--blue-wash); }
   font-variant-numeric: tabular-nums;
 }
 .score-ev-points[data-minus='true'] { color: var(--danger); }
+
+/* 수동 점수 정정 */
+.adjust-form {
+  display: grid; gap: 10px; align-items: end;
+  margin-top: 14px; padding: 16px; border-radius: var(--r);
+  background: var(--card); border: 1px solid var(--line);
+}
+@media (min-width: 900px) {
+  .adjust-form { grid-template-columns: 1.4fr .7fr .9fr 2fr auto; }
+}
+.adjust-field { display: grid; gap: 6px; min-width: 0; }
+.adjust-field > span { font-size: 12px; font-weight: 600; color: var(--s500); }
+.adjust-field input, .adjust-field select {
+  width: 100%; padding: 9px 12px; border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong); background: var(--card);
+  font-family: inherit; font-size: 14px; color: var(--ink);
+}
+.adjust-field input:focus, .adjust-field select:focus {
+  outline: none; border-color: var(--blue);
+}
+
+.adjust-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 6px; }
+.adjust-list li {
+  display: grid; align-items: center; gap: 10px;
+  grid-template-columns: 1fr auto auto;
+  padding: 11px 14px; border-radius: var(--r-sm);
+  background: var(--card); border: 1px solid var(--line);
+  font-size: 12.5px;
+}
+@media (min-width: 900px) {
+  .adjust-list li { grid-template-columns: 92px 1.1fr 2fr 56px auto; }
+}
+.adjust-week { color: var(--muted); font-variant-numeric: tabular-nums; }
+.adjust-connect { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adjust-reason { color: var(--s500); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adjust-reason em { font-style: normal; color: var(--muted); }
+/* 좁은 화면에서는 주차·사유를 접는다. 다섯 칸이면 전부 뭉갠다. */
+@media (max-width: 899px) {
+  .adjust-week, .adjust-reason { display: none; }
+}
+.adjust-points {
+  text-align: right; font-weight: 800; color: var(--blue);
+  font-variant-numeric: tabular-nums;
+}
+.adjust-points[data-minus='true'] { color: var(--danger); }
+.adjust-confirm { display: flex; align-items: center; gap: 6px; }
+
+.score-board-recalc { flex: none; padding: 4px 6px; font-size: 12px; }

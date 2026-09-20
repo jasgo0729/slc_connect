@@ -1,9 +1,15 @@
 import Link from 'next/link';
-import { listRecentScoreEvents, listScoreBoard } from '@/lib/db/queries/scoring';
+import {
+  listConfirmedConnects,
+  listManualAdjustments,
+  listRecentScoreEvents,
+  listScoreBoard,
+} from '@/lib/db/queries/scoring';
 import { SCORING } from '@/lib/scoring/rules';
 import { formatWeek } from '@/lib/scoring/week';
 import { scoreEventLabel } from '@/lib/connects/score-events';
-import { RecalcButton } from './recalc-button';
+import { RecalcButton, RowRecalc } from './recalc-button';
+import { ManualPanel } from './manual-panel';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +25,12 @@ export const dynamic = 'force-dynamic';
  * 한도에 걸린 것이다. 그것을 한눈에 찾으라고 인증 건수를 함께 둔다.
  */
 export default async function AdminScoresPage() {
-  const [board, events] = await Promise.all([listScoreBoard(), listRecentScoreEvents(60)]);
+  const [board, events, manual, confirmed] = await Promise.all([
+    listScoreBoard(),
+    listRecentScoreEvents(60),
+    listManualAdjustments(40),
+    listConfirmedConnects(),
+  ]);
 
   return (
     <main className="shell admin-page">
@@ -53,10 +64,13 @@ export default async function AdminScoresPage() {
               </Link>
               <span className="score-board-certs">인증 {r.approvedCerts}건</span>
               <span className="score-board-points">{r.total}점</span>
+              <RowRecalc connectId={r.connectId} />
             </li>
           ))}
         </ul>
       )}
+
+      <ManualPanel connects={confirmed} rows={manual} />
 
       <h2 className="section-title" style={{ marginTop: 28 }}>
         최근 점수 이벤트

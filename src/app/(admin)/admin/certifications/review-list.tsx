@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { Notice } from '@/components/ui/notice';
 import { Sheet } from '@/components/ui/sheet';
 import { DELIVERABLE_GRADES, minParticipants } from '@/lib/scoring/rules';
-import { reviewCertAction } from './actions';
 import { CERT_REJECT_REASONS } from '@/lib/connects/cert-reject-reasons';
+import { reviewCertAction } from './actions';
 
 /**
  * 검수 목록.

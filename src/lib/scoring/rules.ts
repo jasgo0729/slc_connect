@@ -65,3 +65,19 @@ export function minParticipants(capacity: number): number {
  * 정해지면 숫자를 넣으면 되고, 계산 코드는 이미 이 값을 본다.
  */
 export const SOCIAL_WEEKLY_LIMIT: number | null = null;
+
+/**
+ * 수동 정정의 한 번 한도.
+ *
+ * 규칙서에 없는 값이다. 오타를 막으려고 둔다 — 10을 넣으려다
+ * 100을 넣으면 한 팀의 순위가 통째로 뒤집히고, 랭킹은 매주
+ * 공개되므로(§6.12) 그 사이에 학생들이 먼저 본다.
+ *
+ * 이 범위를 넘는 정정이 필요하면 여러 번 나눠 넣는다. 나눠 넣으면
+ * 각각에 근거가 남아 나중에 무엇을 왜 줬는지 읽을 수 있다.
+ */
+export const MANUAL_ADJUSTMENT_LIMIT = 100;
+
+/** 정정 사유는 반드시 적는다. 근거 없는 점수는 소명할 수 없다. */
+export const MANUAL_REASON_MIN = 2;
+export const MANUAL_REASON_MAX = 200;

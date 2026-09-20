@@ -5,9 +5,15 @@ import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/session';
 import { reviewCertification, type ReviewOptions } from '@/lib/db/queries/certifications';
 import { notifyCertificationReviewed } from '@/lib/notify/send';
-
+// 'use server' 파일은 async 함수만 내보낼 수 있다. 사유 목록은
+// lib/connects 에 두고 여기서도 화면에서도 그것을 읽는다.
 import { CERT_REJECT_REASONS } from '@/lib/connects/cert-reject-reasons';
-// export const REJECT_REASONS = [...]  ← 삭제
+
+/**
+ * G-05 인증 검수.
+ *
+ * 주 60~90건이 이곳을 지난다. 한 건에 클릭 하나로 끝나야 한다.
+ */
 
 /**
  * 승인할 때 함께 정하는 것 (규칙서 §6.4·§6.6).

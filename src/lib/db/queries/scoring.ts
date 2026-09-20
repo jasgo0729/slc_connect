@@ -1,7 +1,14 @@
 import { and, asc, desc, eq, ne, sql } from 'drizzle-orm';
 import { db } from '../client';
-import { certifications, connects, scoreEvents } from '../schema';
+import { adminAuditLog, certifications, connects, scoreEvents } from '../schema';
 import { calculateScores, sumPoints, type ComputedEvent } from '@/lib/scoring/calculate';
+import {
+  MANUAL_ADJUSTMENT_LIMIT,
+  MANUAL_REASON_MAX,
+  MANUAL_REASON_MIN,
+} from '@/lib/scoring/rules';
+import { resolveScoringWeek } from '@/lib/scoring/week';
+import { todayKST } from '@/lib/connects/deadline';
 
 /**
  * G-06 점수 집계 — 규칙서 §6 을 DB 에 반영하는 자리.
@@ -201,4 +208,180 @@ export async function listRecentScoreEvents(limit = 60): Promise<ScoreEventRow[]
     .innerJoin(connects, eq(scoreEvents.connectId, connects.id))
     .orderBy(desc(scoreEvents.weekStart), asc(connects.name), desc(scoreEvents.createdAt))
     .limit(limit);
+}
+
+/* ── 수동 정정 ─────────────────────────────────────────── */
+
+/**
+ * 계산으로 낼 수 없는 점수.
+ *
+ * 규칙서 §6 은 인증을 거친 활동만 다룬다. 그 밖의 일 — 운영진이
+ * 인정한 특별 활동, 잘못 준 점수의 회수, 시스템 장애로 인증하지
+ * 못한 건의 보전 — 은 사람이 넣어야 한다.
+ *
+ * manual_adjustment 는 재계산이 지우지 않는 유일한 유형이다
+ * (recalculateConnectScores 참고). 계산으로 되살릴 수 없기 때문이다.
+ * 그래서 넣을 때 근거를 반드시 남기게 한다. 근거 없는 행은 나중에
+ * 아무도 손댈 수 없다 — 지워도 되는지, 왜 준 것인지 알 수 없다.
+ */
+export type ManualResult = { ok: true; id: string } | { ok: false; reason: string };
+
+export async function addManualAdjustment(
+  adminId: string,
+  input: { connectId: string; points: number; reason: string; weekStart?: string },
+): Promise<ManualResult> {
+  const points = Math.trunc(input.points);
+  const reason = input.reason.trim();
+
+  // 화면에서도 막지만 여기서 다시 본다. 서버 액션은 폼을 거치지 않고
+  // 부를 수 있다.
+  if (!Number.isFinite(points) || points === 0) {
+    return { ok: false, reason: '0이 아닌 점수를 적어주세요.' };
+  }
+  if (Math.abs(points) > MANUAL_ADJUSTMENT_LIMIT) {
+    return {
+      ok: false,
+      reason: `한 번에 ${MANUAL_ADJUSTMENT_LIMIT}점까지만 정정할 수 있어요. 나눠서 넣어주세요.`,
+    };
+  }
+  if (reason.length < MANUAL_REASON_MIN || reason.length > MANUAL_REASON_MAX) {
+    return { ok: false, reason: '정정 사유를 적어주세요. 팀에게 그대로 보여요.' };
+  }
+
+  // 주차를 고르지 않으면 오늘이 속한 주에 넣는다(§6.1).
+  const weekStart = resolveScoringWeek(input.weekStart || todayKST());
+
+  return db.transaction(async (tx) => {
+    const [c] = await tx
+      .select({ name: connects.name, status: connects.status })
+      .from(connects)
+      .where(eq(connects.id, input.connectId))
+      .limit(1);
+
+    if (!c) return { ok: false, reason: '커넥트를 찾을 수 없어요.' } as const;
+    if (c.status !== 'confirmed') {
+      return { ok: false, reason: '확정된 커넥트에만 점수를 줄 수 있어요.' } as const;
+    }
+
+    const [row] = await tx
+      .insert(scoreEvents)
+      .values({
+        connectId: input.connectId,
+        certificationId: null,
+        eventType: 'manual_adjustment',
+        // 배율을 적용하지 않는다. 사람이 최종 점수를 직접 정한 것이라
+        // 여기에 배율을 곱하면 의도한 숫자가 아니게 된다.
+        basePoints: points,
+        multiplier: '1.0',
+        finalPoints: points,
+        weekStart,
+        reason,
+        createdBy: adminId,
+      })
+      .returning({ id: scoreEvents.id });
+
+    await tx.insert(adminAuditLog).values({
+      actorId: adminId,
+      action: 'score.adjust',
+      target: input.connectId,
+      detail: { name: c.name, points, reason, weekStart },
+    });
+
+    return { ok: true, id: row!.id } as const;
+  });
+}
+
+/**
+ * 수동 정정 취소.
+ *
+ * 수정 대신 삭제 후 다시 넣는 방식이다. 고친 흔적이 남지 않는
+ * 수정보다, 지운 기록과 새로 넣은 기록이 감사 로그에 둘 다 남는
+ * 편이 낫다.
+ *
+ * 계산으로 붙은 이벤트는 지우지 못한다 — 다음 재계산에서 그대로
+ * 되살아나므로 지우는 시늉만 하는 꼴이 된다.
+ */
+export async function deleteManualAdjustment(
+  adminId: string,
+  eventId: string,
+): Promise<{ ok: boolean; reason?: string }> {
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({
+        id: scoreEvents.id,
+        connectId: scoreEvents.connectId,
+        eventType: scoreEvents.eventType,
+        finalPoints: scoreEvents.finalPoints,
+        reason: scoreEvents.reason,
+      })
+      .from(scoreEvents)
+      .where(eq(scoreEvents.id, eventId))
+      .limit(1);
+
+    if (!row) return { ok: false, reason: '이미 지워진 정정이에요.' };
+    if (row.eventType !== 'manual_adjustment') {
+      return { ok: false, reason: '계산으로 붙은 점수는 여기서 지울 수 없어요.' };
+    }
+
+    await tx.delete(scoreEvents).where(eq(scoreEvents.id, eventId));
+    await tx.insert(adminAuditLog).values({
+      actorId: adminId,
+      action: 'score.adjust.delete',
+      target: row.connectId,
+      detail: { points: row.finalPoints, reason: row.reason },
+    });
+
+    return { ok: true };
+  });
+}
+
+export interface ManualRow {
+  id: string;
+  connectId: string;
+  connectName: string;
+  points: number;
+  weekStart: string;
+  reason: string | null;
+  byName: string | null;
+  createdAt: Date;
+}
+
+/** 수동 정정만 따로 본다. 지울 수 있는 행이 무엇인지 분명해야 한다. */
+export async function listManualAdjustments(limit = 40): Promise<ManualRow[]> {
+  return db
+    .select({
+      id: scoreEvents.id,
+      connectId: scoreEvents.connectId,
+      connectName: connects.name,
+      points: scoreEvents.finalPoints,
+      weekStart: scoreEvents.weekStart,
+      reason: scoreEvents.reason,
+      // 누가 넣었는지. 이름은 roster 에 있으므로 users 를 거쳐 잇는다.
+      byName: sql<string | null>`(
+        SELECT r.name FROM users u
+        JOIN roster r ON r.student_no = u.student_no
+        WHERE u.id = score_events.created_by
+      )`,
+      createdAt: scoreEvents.createdAt,
+    })
+    .from(scoreEvents)
+    .innerJoin(connects, eq(scoreEvents.connectId, connects.id))
+    .where(eq(scoreEvents.eventType, 'manual_adjustment'))
+    .orderBy(desc(scoreEvents.createdAt))
+    .limit(limit);
+}
+
+/** 한 커넥트만 다시 계산한다. 점수판에서 줄마다 누를 수 있게 한다. */
+export async function recalculateOne(adminId: string, connectId: string): Promise<number> {
+  const r = await db.transaction((tx) => recalculateConnectScores(tx, connectId, adminId));
+  return r.total;
+}
+
+/** 확정된 커넥트 목록. 정정 폼의 선택지다. */
+export async function listConfirmedConnects(): Promise<{ id: string; name: string }[]> {
+  return db
+    .select({ id: connects.id, name: connects.name })
+    .from(connects)
+    .where(eq(connects.status, 'confirmed'))
+    .orderBy(asc(connects.name));
 }
