@@ -6,11 +6,14 @@ import { CertifyEntry } from './certify-entry';
 import { IconArrowLeft } from './ui/icon';
 import type { RankingMode, ScoreEntry, TeamMember } from '@/lib/db/queries/ranking';
 import type { OnlineCertAccess } from '@/lib/connects/certification';
+import type { ChallengeProgress } from '@/lib/scoring/challenge';
+import { CHALLENGE } from '@/lib/scoring/rules';
 import { trackLabel } from '@/lib/connects/options';
 import {
   RANKING_PERIOD_LABEL,
   formatActivityDate,
   formatPoints,
+  isRankedTrack,
   scoreEventLabel,
 } from '@/lib/connects/score-events';
 
@@ -54,6 +57,12 @@ export interface TeamPageProps {
 
   /** G-09 — 방학 중에는 전부, 학기 중에는 도전 커넥트만. */
   online: OnlineCertAccess;
+
+  /**
+   * §9.3 도전 트랙 활동 횟수. 도전 팀이고 내 팀일 때만 들어온다.
+   * 도전 트랙은 점수 대신 이것으로 정량 평가를 받는다.
+   */
+  challenge?: ChallengeProgress | null;
 }
 
 export function TeamPage(p: TeamPageProps) {
@@ -96,17 +105,35 @@ export function TeamPage(p: TeamPageProps) {
         </section>
       )}
 
-      {p.isMine && (
+      {/* 취미 팀은 점수 내역, 도전 팀은 활동 현황. 도전 트랙은 점수제가
+          아니라(§9) 점수 내역을 보여주면 비어 있거나, 쓰이지 않는
+          숫자로 오해를 산다. */}
+      {p.isMine && isRankedTrack(p.track) && (
         <section className="section">
           <h2 className="section-title">최근 점수 획득 내역</h2>
           <ScoreLog scores={p.scores} />
         </section>
       )}
 
+      {p.isMine && !isRankedTrack(p.track) && p.challenge && (
+        <section className="section">
+          <h2 className="section-title">활동 현황</h2>
+          <ChallengeBox progress={p.challenge} />
+        </section>
+      )}
+
       <div className="team-foot">
-        <Link href="/ranking" className="btn btn--line btn--block">
-          랭킹으로
-        </Link>
+        {/* 도전 팀에게 '랭킹으로'는 자기 팀이 없는 화면으로 보내는
+            버튼이다. 대신 씨앗판으로 돌려보낸다. */}
+        {isRankedTrack(p.track) ? (
+          <Link href="/ranking" className="btn btn--line btn--block">
+            랭킹으로
+          </Link>
+        ) : (
+          <Link href="/connects" className="btn btn--line btn--block">
+            씨앗판으로
+          </Link>
+        )}
         {p.isMine && (
           <CertifyEntry
             connectId={p.connectId}
@@ -128,10 +155,64 @@ export function TeamPage(p: TeamPageProps) {
  * 점수가 없으면 순위 대신 무엇을 하면 쌓이는지를 쓴다.
  */
 function rankLine(p: TeamPageProps): string {
+  // 도전 팀은 순위가 없다. "점수가 쌓여요"라고 쓰면 언젠가 순위에
+  // 오를 것처럼 읽힌다.
+  // 도전 팀은 순위가 없다(§9). 대신 지금 몇 번 했는지를 쓴다.
+  if (!isRankedTrack(p.track)) {
+    return p.challenge
+      ? `활동 ${p.challenge.total}회 · 오프라인 ${p.challenge.offline}회`
+      : '도전 커넥트는 랭킹에 포함되지 않아요';
+  }
   if (p.rankingMode === 'hidden') return '순위는 잠시 가려 두었어요';
   if (p.rankingMode === 'partial') return '막바지라 순위를 잠시 가려 두었어요';
   if (p.points === null || p.points <= 0) return '활동을 인증하면 점수가 쌓여요';
   return `${RANKING_PERIOD_LABEL} ${p.rank}위 · ${p.points}점`;
+}
+
+/**
+ * §9.3 정량 평가 · 활동 횟수.
+ *
+ * 목표를 숫자로 보여준다. "오프라인 4회 포함 총 8회"는 문장으로만
+ * 두면 지금 몇 번 남았는지 매번 셈해야 한다.
+ */
+function ChallengeBox({ progress: g }: { progress: ChallengeProgress }) {
+  const full = g.missing === 0;
+  return (
+    <div className="chal-box">
+      <div className="chal-row">
+        <span className="chal-label">전체 활동</span>
+        <Meter value={g.total} target={CHALLENGE.totalTarget} />
+      </div>
+      <div className="chal-row">
+        <span className="chal-label">그중 오프라인</span>
+        <Meter value={g.offline} target={CHALLENGE.offlineTarget} />
+      </div>
+      <p className="chal-note" data-full={full}>
+        {full
+          ? `활동 횟수 항목 만점(${CHALLENGE.maxPercent}%)을 채웠어요.`
+          : `${g.missing}회 더 하면 활동 횟수 항목 만점이에요. 지금은 ${g.percent}% / ${CHALLENGE.maxPercent}%.`}
+      </p>
+      <p className="field-hint" style={{ marginTop: 6 }}>
+        오프라인 {CHALLENGE.offlineTarget}회를 포함해 총 {CHALLENGE.totalTarget}회면 만점이고, 모자란
+        1회마다 {CHALLENGE.penaltyPerMissing}%씩 빠져요. 같은 날 여러 번은 한 번으로 세요.
+      </p>
+    </div>
+  );
+}
+
+function Meter({ value, target }: { value: number; target: number }) {
+  const pct = Math.min(100, Math.round((value / target) * 100));
+  return (
+    <span className="chal-meter">
+      <span className="chal-bar" aria-hidden="true">
+        <span style={{ width: `${pct}%` }} />
+      </span>
+      <span className="chal-num">
+        {value}
+        <em> / {target}</em>
+      </span>
+    </span>
+  );
 }
 
 function ScoreLog({ scores }: { scores: ScoreEntry[] }) {

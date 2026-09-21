@@ -79,6 +79,11 @@ export default async function RankingPage() {
               {mode === 'partial' ? '상위 5팀' : '전체 순위'}
             </h2>
 
+            {/* 씨앗판에서 본 팀이 여기 없으면 빠진 줄 안다. 한 줄로 알린다. */}
+            <p className="field-hint" style={{ marginTop: -4, marginBottom: 12 }}>
+              취미 커넥트끼리 겨뤄요. 도전 커넥트는 랭킹에 포함되지 않아요.
+            </p>
+
             {mode === 'partial' && (
               <p className="field-hint" style={{ marginBottom: 12 }}>
                 막바지라 순위와 점수는 가려 두었어요. 이름은 가나다순이에요.

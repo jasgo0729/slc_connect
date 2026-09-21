@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import {
+  listChallengeBoard,
   listConfirmedConnects,
   listManualAdjustments,
   listRecentScoreEvents,
   listScoreBoard,
 } from '@/lib/db/queries/scoring';
-import { CROSS, SCORING } from '@/lib/scoring/rules';
+import { CHALLENGE, CROSS, SCORING } from '@/lib/scoring/rules';
 import { formatWeek } from '@/lib/scoring/week';
 import { scoreEventLabel } from '@/lib/connects/score-events';
 import { RecalcButton, RowRecalc } from './recalc-button';
@@ -25,8 +26,9 @@ export const dynamic = 'force-dynamic';
  * 한도에 걸린 것이다. 그것을 한눈에 찾으라고 인증 건수를 함께 둔다.
  */
 export default async function AdminScoresPage() {
-  const [board, events, manual, confirmed] = await Promise.all([
+  const [board, challenge, events, manual, confirmed] = await Promise.all([
     listScoreBoard(),
+    listChallengeBoard(),
     listRecentScoreEvents(60),
     listManualAdjustments(40),
     listConfirmedConnects(),
@@ -56,7 +58,7 @@ export default async function AdminScoresPage() {
       </section>
 
       <h2 className="section-title" style={{ marginTop: 28 }}>
-        커넥트별 점수
+        취미 커넥트 점수
       </h2>
       {board.length === 0 ? (
         <p className="mini-empty">확정된 커넥트가 없어요.</p>
@@ -71,6 +73,37 @@ export default async function AdminScoresPage() {
               <span className="score-board-certs">인증 {r.approvedCerts}건</span>
               <span className="score-board-points">{r.total}점</span>
               <RowRecalc connectId={r.connectId} />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* §9 도전 트랙은 점수제가 아니다. 순위도 매기지 않는다 —
+          활동 횟수는 20% 항목 하나이고 "변별이 되지 않도록 널널한 기준"
+          이라, 줄 세우면 이 항목의 무게를 잘못 읽게 된다. 만점까지
+          남은 횟수가 많은 팀부터 보여준다(챙겨야 할 팀이 위). */}
+      <h2 className="section-title" style={{ marginTop: 28 }}>
+        도전 커넥트 활동 현황
+      </h2>
+      <p className="field-hint" style={{ marginTop: 0 }}>
+        §9.3 정량 평가 · 활동 횟수(20%). 오프라인 {CHALLENGE.offlineTarget}회 포함 총{' '}
+        {CHALLENGE.totalTarget}회면 만점, 모자란 1회당 {CHALLENGE.penaltyPerMissing}%.
+      </p>
+      {challenge.length === 0 ? (
+        <p className="mini-empty">확정된 도전 커넥트가 없어요.</p>
+      ) : (
+        <ul className="score-board">
+          {challenge.map((r) => (
+            <li key={r.connectId}>
+              <Link href={`/admin/connects/${r.connectId}`} className="score-board-name">
+                {r.name}
+              </Link>
+              <span className="score-board-certs">
+                {r.total}/{CHALLENGE.totalTarget}회 · 오프라인 {r.offline}/{CHALLENGE.offlineTarget}
+              </span>
+              <span className="score-board-points" data-full={r.missing === 0}>
+                {r.percent}%
+              </span>
             </li>
           ))}
         </ul>

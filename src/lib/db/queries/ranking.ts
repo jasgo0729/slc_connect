@@ -1,6 +1,7 @@
 import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import { db } from '../client';
 import { certifications, connects, memberships, scoreEvents } from '../schema';
+import { RANKED_TRACK } from '@/lib/connects/score-events';
 
 /**
  * G-13 커넥트 랭킹 · 활동 모드 팀 페이지(시안 30~32).
@@ -109,9 +110,17 @@ async function rawRanking(): Promise<RawRank[]> {
       points,
     })
     .from(connects)
-    // 확정된 팀만 겨룬다. 모집이 끝나지 않았거나 반려된 커넥트가
-    // 0점으로 목록 바닥에 깔리면, 활동 중인 팀 수를 알 수 없다.
-    .where(eq(connects.status, 'confirmed'));
+    .where(
+      and(
+        // 확정된 팀만 겨룬다. 모집이 끝나지 않았거나 반려된 커넥트가
+        // 0점으로 목록 바닥에 깔리면, 활동 중인 팀 수를 알 수 없다.
+        eq(connects.status, 'confirmed'),
+        // 취미 트랙만. 도전 트랙은 랭킹에서 뺀다(isRankedTrack 참고).
+        // 여기서 거르면 전체 랭킹·히어로 카드·팀 페이지 순위가 한꺼번에
+        // 맞는다 — 셋 다 listRanking 을 거친다.
+        eq(connects.track, RANKED_TRACK),
+      ),
+    );
 }
 
 /**

@@ -2183,3 +2183,27 @@ a.utable-row:hover { background: var(--blue-wash); }
   margin-left: 5px; font-style: normal; font-weight: 500;
   font-size: 12px; color: var(--muted);
 }
+
+/* §9.3 도전 트랙 활동 현황 */
+.chal-box {
+  padding: 16px; border-radius: var(--r);
+  background: var(--card); border: 1px solid var(--line);
+}
+.chal-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.chal-row + .chal-row { margin-top: 10px; }
+.chal-label { flex: none; font-size: 13px; font-weight: 600; color: var(--s600); }
+.chal-meter { display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-end; }
+.chal-bar {
+  flex: 1; max-width: 160px; height: 6px; border-radius: 99px;
+  background: var(--s100); overflow: hidden;
+}
+.chal-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--blue); }
+.chal-num {
+  flex: none; min-width: 42px; text-align: right;
+  font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.chal-num em { font-style: normal; font-weight: 500; color: var(--muted); }
+.chal-note { margin: 14px 0 0; font-size: 13px; font-weight: 600; color: var(--s700); }
+.chal-note[data-full='true'] { color: var(--blue); }
+
+.score-board-points[data-full='true'] { color: var(--blue); }

@@ -32,7 +32,8 @@ export async function reviewCertAction(
   error?: string;
   awarded?: number;
   total?: number;
-  cross?: { name: string; awarded: number; total: number };
+  cross?: { name: string; awarded: number; total: number; track: string };
+  track?: string;
 }> {
   let adminId: string;
   try {
@@ -65,5 +66,5 @@ export async function reviewCertAction(
 
   // 몇 점이 붙었는지 돌려준다. 규칙이 복잡해서(§6.2 주 2회, §6.3
   // 기준 인원, §6.5 주 1회) 검수자가 결과를 바로 못 본다.
-  return { awarded: r.awarded, total: r.total, cross: r.cross };
+  return { awarded: r.awarded, total: r.total, cross: r.cross, track: r.track };
 }

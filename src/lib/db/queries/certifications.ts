@@ -294,7 +294,9 @@ export type ReviewResult =
        * 검수자에게 보여준다 — 양쪽에 들어갔는지 눈으로 확인할
        * 방법이 달리 없다.
        */
-      cross?: { name: string; awarded: number; total: number };
+      cross?: { name: string; awarded: number; total: number; track: string };
+      /** 올린 팀의 트랙. 도전 팀은 점수가 붙지 않아 결과 문구가 다르다. */
+      track: string;
     }
   | { ok: false; reason: string };
 
@@ -321,9 +323,13 @@ export async function reviewCertification(
         connectId: certifications.connectId,
         submittedBy: certifications.submittedBy,
         connectName: connects.name,
+        track: connects.track,
         crossConnectId: certifications.crossConnectId,
         crossName: sql<string | null>`(
           SELECT c2.name FROM connects c2 WHERE c2.id = certifications.cross_connect_id
+        )`,
+        crossTrack: sql<string | null>`(
+          SELECT c3.track FROM connects c3 WHERE c3.id = certifications.cross_connect_id
         )`,
       })
       .from(certifications)
@@ -373,13 +379,14 @@ export async function reviewCertification(
     /* CCC 는 양쪽 팀의 활동이다. 상대 팀도 다시 계산해야 점수가
        붙는다 — 이걸 빠뜨리면 올린 팀만 점수를 받고, 누가 올릴지를
        두고 팀끼리 눈치를 보게 된다. */
-    let cross: { name: string; awarded: number; total: number } | undefined;
+    let cross: { name: string; awarded: number; total: number; track: string } | undefined;
     if (c.crossConnectId) {
       const r = await recalculateConnectScores(tx, c.crossConnectId, adminId);
       cross = {
         name: c.crossName ?? '상대 팀',
         awarded: sumFor(r),
         total: r.total,
+        track: c.crossTrack ?? '',
       };
     }
 
@@ -391,6 +398,7 @@ export async function reviewCertification(
       awarded: sumFor(recalc),
       total: recalc.total,
       cross,
+      track: c.track,
     } as const;
   });
 }

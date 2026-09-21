@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Notice } from '@/components/ui/notice';
 import { Sheet } from '@/components/ui/sheet';
 import { DELIVERABLE_GRADES, minParticipants } from '@/lib/scoring/rules';
+import { isRankedTrack } from '@/lib/connects/score-events';
 import { CERT_REJECT_REASONS } from '@/lib/connects/cert-reject-reasons';
 import { reviewCertAction } from './actions';
 
@@ -55,6 +56,17 @@ const PHOTO_LABELS: Record<string, string[]> = {
   online: ['캡쳐 1', '캡쳐 2'],
 };
 
+/**
+ * 승인 결과 한 줄.
+ *
+ * 도전 팀은 점수가 붙지 않는다(§9). "이 인증으로 0점"이라고 쓰면
+ * 검수자는 무언가 잘못된 줄 안다.
+ */
+function resultLine(name: string, track: string, awarded: number, total: number): string {
+  if (!isRankedTrack(track)) return `${name} · 도전 커넥트라 점수 대신 활동 횟수로 집계돼요`;
+  return `${name} · 이 인증으로 ${awarded}점 · 팀 누적 ${total}점`;
+}
+
 export function ReviewList({ items }: { items: Item[] }) {
   const [hidden, setHidden] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +79,8 @@ export function ReviewList({ items }: { items: Item[] }) {
     name: string;
     awarded: number;
     total: number;
-    cross?: { name: string; awarded: number; total: number };
+    track: string;
+    cross?: { name: string; awarded: number; total: number; track: string };
   } | null>(null);
   const [, start] = useTransition();
 
@@ -96,6 +109,7 @@ export function ReviewList({ items }: { items: Item[] }) {
           name: item.connectName,
           awarded: r.awarded ?? 0,
           total: r.total ?? 0,
+          track: r.track ?? '',
           cross: r.cross,
         });
       }
@@ -124,13 +138,12 @@ export function ReviewList({ items }: { items: Item[] }) {
 
       {done && (
         <Notice>
-          {done.name} · 이 인증으로 {done.awarded}점 · 팀 누적 {done.total}점
+          {resultLine(done.name, done.track, done.awarded, done.total)}
           {/* CCC 는 양쪽에 붙는다. 상대 팀까지 보여야 확인이 된다. */}
           {done.cross && (
             <>
               <br />
-              {done.cross.name} · 이 인증으로 {done.cross.awarded}점 · 팀 누적{' '}
-              {done.cross.total}점
+              {resultLine(done.cross.name, done.cross.track, done.cross.awarded, done.cross.total)}
             </>
           )}
         </Notice>

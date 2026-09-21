@@ -1,7 +1,9 @@
-import { and, asc, desc, eq, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, ne, or, sql } from 'drizzle-orm';
 import { db } from '../client';
 import { adminAuditLog, certifications, connects, scoreEvents } from '../schema';
 import { calculateScores, sumPoints, type ComputedEvent } from '@/lib/scoring/calculate';
+import { challengeProgress, type ChallengeProgress } from '@/lib/scoring/challenge';
+import { RANKED_TRACK } from '@/lib/connects/score-events';
 import {
   MANUAL_ADJUSTMENT_LIMIT,
   MANUAL_REASON_MAX,
@@ -52,12 +54,28 @@ export async function recalculateConnectScores(
   adminId?: string,
 ): Promise<RecalcResult> {
   const [c] = await tx
-    .select({ capacity: connects.capacity })
+    .select({ capacity: connects.capacity, track: connects.track })
     .from(connects)
     .where(eq(connects.id, connectId))
     .limit(1);
 
   if (!c) return { total: 0, events: [] };
+
+  /* §9 도전 트랙은 점수제가 아니다. 정량 40% · 정성 60% 로 평가하고,
+     웹사이트가 셀 수 있는 부분(활동 횟수)은 challengeProgress 가 따로
+     센다. 여기서 §6 점수를 쌓으면 쓰이지도 않는 숫자가 팀 페이지와
+     점수판에 남아, 도전 팀이 자기가 점수로 겨루는 줄 안다.
+
+     예전에 쌓인 계산 이벤트는 지운다. 수동 정정은 남긴다 — 사람이
+     근거를 적어 넣은 것이라 트랙이 바뀌었다고 사라지면 안 된다. */
+  if (c.track !== RANKED_TRACK) {
+    await tx
+      .delete(scoreEvents)
+      .where(
+        and(eq(scoreEvents.connectId, connectId), ne(scoreEvents.eventType, 'manual_adjustment')),
+      );
+    return { total: 0, events: [] };
+  }
 
   /* 이 팀이 올린 인증. */
   const own = await tx
@@ -233,7 +251,8 @@ export async function listScoreBoard(): Promise<ScoreBoardRow[]> {
       approvedCerts,
     })
     .from(connects)
-    .where(eq(connects.status, 'confirmed'));
+    // 점수로 겨루는 것은 취미 트랙뿐이다. 도전 팀은 listChallengeBoard.
+    .where(and(eq(connects.status, 'confirmed'), eq(connects.track, RANKED_TRACK)));
 
   return rows.sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, 'ko'));
 }
@@ -440,4 +459,73 @@ export async function listConfirmedConnects(): Promise<{ id: string; name: strin
     .from(connects)
     .where(eq(connects.status, 'confirmed'))
     .orderBy(asc(connects.name));
+}
+
+/* ── 도전 트랙 활동 횟수 (§9.3) ─────────────────────────── */
+
+/**
+ * 한 커넥트가 참여한 승인된 활동.
+ *
+ * 자기 팀이 올린 것과, 상대 팀이 올렸지만 함께한 CCC 를 모두 센다.
+ * CCC 도 이 팀이 실제로 모인 활동이다. 올린 쪽만 세면 누가 인증을
+ * 올리느냐에 따라 횟수가 갈린다.
+ */
+async function approvedActivities(connectIds: string[]) {
+  if (connectIds.length === 0) return [];
+  return db
+    .select({
+      connectId: certifications.connectId,
+      crossConnectId: certifications.crossConnectId,
+      activityDate: certifications.activityDate,
+      activityType: certifications.activityType,
+    })
+    .from(certifications)
+    .where(
+      and(
+        eq(certifications.reviewStatus, 'approved'),
+        or(
+          inArray(certifications.connectId, connectIds),
+          inArray(certifications.crossConnectId, connectIds),
+        ),
+      ),
+    );
+}
+
+function progressFor(
+  connectId: string,
+  rows: Awaited<ReturnType<typeof approvedActivities>>,
+): ChallengeProgress {
+  return challengeProgress(
+    rows.filter((r) => r.connectId === connectId || r.crossConnectId === connectId),
+  );
+}
+
+export async function getChallengeProgress(connectId: string): Promise<ChallengeProgress> {
+  return progressFor(connectId, await approvedActivities([connectId]));
+}
+
+export interface ChallengeBoardRow extends ChallengeProgress {
+  connectId: string;
+  name: string;
+}
+
+/**
+ * 운영진용 도전 트랙 현황.
+ *
+ * 순위를 매기지 않는다. 활동 횟수는 20% 항목 하나이고 "변별이
+ * 되지 않도록 널널한 기준"(§9.3)이라, 줄 세우면 이 항목의 무게를
+ * 잘못 읽게 된다. 만점까지 남은 횟수가 많은 팀부터 보여준다 —
+ * 운영진이 챙겨야 할 팀이 위에 온다.
+ */
+export async function listChallengeBoard(): Promise<ChallengeBoardRow[]> {
+  const teams = await db
+    .select({ connectId: connects.id, name: connects.name })
+    .from(connects)
+    .where(and(eq(connects.status, 'confirmed'), ne(connects.track, RANKED_TRACK)));
+
+  const rows = await approvedActivities(teams.map((t) => t.connectId));
+
+  return teams
+    .map((t) => ({ ...t, ...progressFor(t.connectId, rows) }))
+    .sort((a, b) => b.missing - a.missing || a.name.localeCompare(b.name, 'ko'));
 }

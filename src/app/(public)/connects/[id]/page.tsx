@@ -14,6 +14,8 @@ import { TeamPage } from '@/components/team-page';
 import { getConnectDetail, summarizeResidence } from '@/lib/db/queries/connect-detail';
 import { getRankingMode, getSeasonConfig } from '@/lib/db/queries/season';
 import { getTeamView } from '@/lib/db/queries/ranking';
+import { getChallengeProgress } from '@/lib/db/queries/scoring';
+import { isRankedTrack } from '@/lib/connects/score-events';
 import { countFavorites, getFavoriteIds } from '@/lib/db/queries/favorites';
 import { CONDITIONS, DAYS, GOAL_TYPES, isExampleConnect, trackLabel } from '@/lib/connects/options';
 import { onlineCertAccess } from '@/lib/connects/certification';
@@ -61,6 +63,10 @@ export default async function ConnectDetailPage({ params }: Props) {
     // 볼 일도 없는 인증 조인을 매번 돌릴 이유도 없다.
     const team = await getTeamView(c.id, { mode, withScores: c.viewer.isMember });
 
+    // §9.3 도전 팀의 활동 횟수. 내 팀일 때만 — 남의 팀 진척을 볼 이유가 없다.
+    const challenge =
+      c.viewer.isMember && !isRankedTrack(c.track) ? await getChallengeProgress(c.id) : null;
+
     return (
       <>
         <AppBar current="/connects" user={{ id: user.id, name: user.name }} />
@@ -79,6 +85,7 @@ export default async function ConnectDetailPage({ params }: Props) {
           rankingMode={mode}
           scores={team.scores}
           online={onlineCertAccess(season.vacation_mode === 'on', c.track)}
+          challenge={challenge}
         />
       </>
     );

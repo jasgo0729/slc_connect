@@ -68,3 +68,19 @@ export function formatPoints(points: number): string {
  * 넣고 이 문구를 바꾸면 된다.
  */
 export const RANKING_PERIOD_LABEL = '전체';
+
+/**
+ * 랭킹에 오르는 트랙.
+ *
+ * 취미 트랙만 겨룬다. 도전 트랙은 결과물을 만드는 팀이라 만남 횟수로
+ * 매긴 점수(§6)와 나란히 두면 비교가 성립하지 않는다.
+ *
+ * 랭킹 쿼리·팀 페이지·랭킹 화면이 모두 이 함수를 읽는다. 세 곳에
+ * 'quantitative' 를 따로 적으면 한 곳만 고쳐져 어긋난다.
+ * 화면에서도 읽으므로 DB 드라이버를 부르지 않는 이 파일에 둔다.
+ */
+export const RANKED_TRACK = 'quantitative';
+
+export function isRankedTrack(track: string): boolean {
+  return track === RANKED_TRACK;
+}
